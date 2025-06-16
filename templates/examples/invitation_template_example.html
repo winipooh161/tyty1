@@ -1,0 +1,1325 @@
+<div class="wedding-invitation-template">
+    <style>
+        /* Основные стили шаблона */
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+        
+        .wedding-invitation-template {
+            font-family: 'Montserrat', sans-serif;
+            color: #333;
+            overflow-x: hidden;
+            line-height: 1.6;
+            background-color: #fff;
+        }
+        
+        .section {
+            padding: 80px 20px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+        
+        /* Стили для заголовков */
+        h1, h2, h3, h4 {
+            font-family: 'Playfair Display', serif;
+            margin: 0;
+        }
+
+        .cursive {
+            font-family: 'Great Vibes', cursive;
+            font-weight: normal;
+        }
+        
+        .title {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+        
+        /* Анимированный цветочный декор */
+        .floral-divider {
+            height: 50px;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAxMDAgMzAiPjxwYXRoIGZpbGw9IiNkNGMxYTkiIGQ9Ik01MCAxNWMwIDAgMTAtMTAgMjAtMTBzMjAgMTAgMjAgMTBjMCAwLTEwIDEwLTIwIDEwcy0yMC0xMC0yMC0xMHptLTQwIDBjMCAwIDEwLTEwIDIwLTEwczIwIDEwIDIwIDEwYzAgMC0xMCAxMC0yMCAxMFMxMCAxNSAxMCAxNXoiLz48L3N2Zz4=');
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 20px 0;
+            opacity: 0.7;
+            background-size: contain;
+        }
+
+        /* Плавная анимация для элементов при прокрутке */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Стили для героя с параллакс эффектом */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.7);
+            z-index: -1;
+            transform: scale(1.1);
+            transition: transform 0.5s ease-out;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+            max-width: 800px;
+        }
+
+        .hero .title {
+            font-size: 5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            animation: fadeInDown 1.2s ease-out;
+        }
+
+        .hero .date {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            margin-top: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+            animation: fadeInUp 1.2s ease-out;
+        }
+
+        /* Стили для секции о паре */
+        .couple {
+            text-align: center;
+            background-color: #f9f7f5;
+        }
+
+        .couple-photos {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .person {
+            flex: 0 0 300px;
+            text-align: center;
+        }
+
+        .person-photo {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 20px;
+            border: 5px solid #fff;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .person-photo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .heart-icon {
+            font-size: 2rem;
+            color: #d4a373;
+        }
+
+        /* Стили для секции истории любви */
+        .story {
+            background-color: #fff;
+            text-align: center;
+        }
+
+        .timeline {
+            margin: 50px auto;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #d4a373;
+            left: 50%;
+            margin-left: -1px;
+        }
+
+        .timeline-item {
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .timeline-content {
+            width: 45%;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content {
+            float: left;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content {
+            float: right;
+            text-align: left;
+        }
+
+        .timeline-date {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            color: #d4a373;
+            font-weight: 500;
+        }
+
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            background: #d4a373;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            margin-left: -8px;
+            border: 3px solid #fff;
+        }
+
+        .timeline-item::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
+        /* Стили для секции с мероприятиями */
+        .events {
+            background-color: #f9f7f5;
+            text-align: center;
+        }
+
+        .event-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .event-card {
+            flex: 0 0 300px;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .event-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .event-image {
+            height: 180px;
+            overflow: hidden;
+        }
+
+        .event-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .event-card:hover .event-image img {
+            transform: scale(1.1);
+        }
+
+        .event-details {
+            padding: 20px;
+        }
+
+        .event-name {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .event-time, .event-location {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .event-time i, .event-location i {
+            margin-right: 5px;
+            color: #d4a373;
+        }
+
+        /* Стили для фотогалереи */
+        .gallery {
+            background-color: #fff;
+            text-align: center;
+        }
+
+        .gallery-images {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 40px 0;
+        }
+
+        .gallery-item {
+            flex: 0 0 calc(33.333% - 10px);
+            max-width: calc(33.333% - 10px);
+            height: 250px;
+            overflow: hidden;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.03);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.08);
+        }
+
+        /* Модальное окно для галереи */
+        .gallery-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-modal.show {
+            display: flex;
+            opacity: 1;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            max-width: 80%;
+            max-height: 80%;
+        }
+
+        .modal-content img {
+            width: 100%;
+            height: auto;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: 300;
+            cursor: pointer;
+        }
+
+        .modal-prev, .modal-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fff;
+            font-size: 30px;
+            cursor: pointer;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+        }
+
+        .modal-prev {
+            left: 30px;
+        }
+
+        .modal-next {
+            right: 30px;
+        }
+
+        /* Стили для секции RSVP */
+        .rsvp {
+            background-color: #f9f7f5;
+            text-align: center;
+        }
+
+        .rsvp-form {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: 'Montserrat', sans-serif;
+            transition: border 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #d4a373;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+        }
+
+        .radio-label input {
+            margin-right: 6px;
+        }
+
+        .btn {
+            background-color: #d4a373;
+            color: #fff;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background-color: #c69c6d;
+            transform: translateY(-2px);
+        }
+
+        /* Стили для счетчика времени */
+        .countdown {
+            background-color: #d4a373;
+            color: #fff;
+            background-image: url('https://images.unsplash.com/photo-1469371670807-013ccf25f16a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: multiply;
+            text-align: center;
+            padding: 60px 20px;
+            position: relative;
+        }
+
+        .countdown-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .countdown-item {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px 10px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+        }
+
+        .countdown-number {
+            font-size: 3rem;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .countdown-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Стили для карты */
+        .map {
+            height: 400px;
+            width: 100%;
+            background-color: #f1f1f1;
+            position: relative;
+        }
+
+        .map iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Стили для футера */
+        .footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .footer-text {
+            margin-bottom: 20px;
+        }
+
+        .social-icons {
+            margin-top: 20px;
+        }
+
+        .social-icons a {
+            color: #fff;
+            font-size: 1.5rem;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+        .social-icons a:hover {
+            color: #d4a373;
+        }
+
+        /* Анимации */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .hero .title {
+                font-size: 3rem;
+            }
+            
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .couple-photos {
+                gap: 20px;
+            }
+            
+            .person {
+                flex: 0 0 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-item .timeline-content {
+                width: calc(100% - 60px);
+                float: right;
+                text-align: left;
+            }
+            
+            .timeline-dot {
+                left: 30px;
+            }
+            
+            .gallery-item {
+                flex: 0 0 calc(50% - 10px);
+                max-width: calc(50% - 10px);
+            }
+            
+            .countdown-item {
+                min-width: calc(50% - 20px);
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery-item {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            
+            .hero .title {
+                font-size: 2.5rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+
+    <!-- Секция Hero с параллакс эффектом -->
+    <section class="hero" id="home" data-editable="hero_section">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <h3 class="cursive" data-editable="invitation_text">С радостью приглашаем Вас на свадьбу</h3>
+            <h1 class="title cursive" data-editable="couple_names">Анна & Иван</h1>
+            <div class="floral-divider"></div>
+            <h2 class="date" data-editable="wedding_date">12 ИЮНЯ 2023</h2>
+        </div>
+    </section>
+
+    <!-- Секция о паре -->
+    <section class="section couple" id="couple">
+        <div class="container">
+            <h2 class="title cursive fade-in" data-editable="couple_section_title">Жених и Невеста</h2>
+            <div class="floral-divider"></div>
+            
+            <div class="couple-photos">
+                <div class="person fade-in">
+                    <img class="person-photo" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80" alt="Невеста" data-editable="bride_photo">
+                    <h3 class="subtitle" data-editable="bride_name">Анна Петрова</h3>
+                    <p data-editable="bride_description">Нежная, заботливая и креативная. Любит путешествия, искусство и создавать уют.</p>
+                </div>
+                
+                <div class="person fade-in">
+                    <div class="heart-icon" data-editable="heart_icon">❤</div>
+                </div>
+                
+                <div class="person fade-in">
+                    <img class="person-photo" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80" alt="Жених" data-editable="groom_photo">
+                    <h3 class="subtitle" data-editable="groom_name">Иван Сидоров</h3>
+                    <p data-editable="groom_description">Сильный, решительный и внимательный. Увлекается спортом, технологиями и кулинарией.</p>
+                </div>
+            </div>
+            
+            <div class="love-story fade-in" data-editable="couple_story">
+                <p>Наша история началась 5 лет назад, когда мы случайно встретились на концерте нашей любимой группы. С первого взгляда между нами пробежала искра, и с тех пор мы неразлучны. Каждый день нашей жизни наполнен любовью, радостью и взаимной поддержкой.</p>
+                <p>Мы прошли много испытаний вместе и теперь готовы сделать следующий шаг. Будем рады, если вы разделите с нами этот особенный день!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секция с историей любви -->
+    <section class="section story" id="story">
+        <div class="container">
+            <h2 class="title cursive fade-in" data-editable="story_title">Наша история</h2>
+            <div class="floral-divider"></div>
+            
+            <div class="timeline">
+                <div class="timeline-item fade-in">
+                    <div class="timeline-content">
+                        <span class="timeline-date" data-editable="timeline_date_1">15 мая 2018</span>
+                        <h3 data-editable="timeline_title_1">Первая встреча</h3>
+                        <p data-editable="timeline_text_1">Мы встретились на концерте и сразу почувствовали связь.</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                
+                <div class="timeline-item fade-in">
+                    <div class="timeline-content">
+                        <span class="timeline-date" data-editable="timeline_date_2">10 июня 2018</span>
+                        <h3 data-editable="timeline_title_2">Первое свидание</h3>
+                        <p data-editable="timeline_text_2">Романтическая прогулка по вечернему городу и много разговоров.</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                
+                <div class="timeline-item fade-in">
+                    <div class="timeline-content">
+                        <span class="timeline-date" data-editable="timeline_date_3">25 декабря 2018</span>
+                        <h3 data-editable="timeline_title_3">Первое Рождество</h3>
+                        <p data-editable="timeline_text_3">Мы впервые провели праздники вместе с нашими семьями.</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                
+                <div class="timeline-item fade-in">
+                    <div class="timeline-content">
+                        <span class="timeline-date" data-editable="timeline_date_4">14 февраля 2020</span>
+                        <h3 data-editable="timeline_title_4">Совместный переезд</h3>
+                        <p data-editable="timeline_text_4">Мы решили жить вместе и создать наше первое уютное гнездышко.</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                
+                <div class="timeline-item fade-in">
+                    <div class="timeline-content">
+                        <span class="timeline-date" data-editable="timeline_date_5">12 сентября 2022</span>
+                        <h3 data-editable="timeline_title_5">Предложение</h3>
+                        <p data-editable="timeline_text_5">Незабываемый момент, когда прозвучало "Ты выйдешь за меня замуж?"</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                
+                <div class="timeline-item fade-in">
+                    <div class="timeline-content">
+                        <span class="timeline-date" data-editable="timeline_date_6">12 июня 2023</span>
+                        <h3 data-editable="timeline_title_6">Наша свадьба</h3>
+                        <p data-editable="timeline_text_6">День, когда мы станем мужем и женой.</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секция с мероприятиями -->
+    <section class="section events" id="events">
+        <div class="container">
+            <h2 class="title cursive fade-in" data-editable="events_title">Программа дня</h2>
+            <div class="floral-divider"></div>
+            
+            <div class="event-cards">
+                <div class="event-card fade-in">
+                    <div class="event-image">
+                        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1469&q=80" alt="Церемония" data-editable="event_image_1">
+                    </div>
+                    <div class="event-details">
+                        <h3 class="event-name" data-editable="event_name_1">Церемония</h3>
+                        <p class="event-time"><i class="bi bi-clock"></i> <span data-editable="event_time_1">14:00 - 15:30</span></p>
+                        <p class="event-location"><i class="bi bi-geo-alt"></i> <span data-editable="event_location_1">Дворец бракосочетания</span></p>
+                    </div>
+                </div>
+                
+                <div class="event-card fade-in">
+                    <div class="event-image">
+                        <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Фотосессия" data-editable="event_image_2">
+                    </div>
+                    <div class="event-details">
+                        <h3 class="event-name" data-editable="event_name_2">Фотосессия</h3>
+                        <p class="event-time"><i class="bi bi-clock"></i> <span data-editable="event_time_2">15:30 - 17:00</span></p>
+                        <p class="event-location"><i class="bi bi-geo-alt"></i> <span data-editable="event_location_2">Городской парк</span></p>
+                    </div>
+                </div>
+                
+                <div class="event-card fade-in">
+                    <div class="event-image">
+                        <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Банкет" data-editable="event_image_3">
+                    </div>
+                    <div class="event-details">
+                        <h3 class="event-name" data-editable="event_name_3">Праздничный банкет</h3>
+                        <p class="event-time"><i class="bi bi-clock"></i> <span data-editable="event_time_3">17:30 - 23:00</span></p>
+                        <p class="event-location"><i class="bi bi-geo-alt"></i> <span data-editable="event_location_3">Ресторан "Панорама"</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секция с фотогалереей -->
+    <section class="section gallery" id="gallery">
+        <div class="container">
+            <h2 class="title cursive fade-in" data-editable="gallery_title">Наши фотографии</h2>
+            <div class="floral-divider"></div>
+            
+            <div class="gallery-images">
+                <div class="gallery-item fade-in">
+                    <img src="https://images.unsplash.com/photo-1529634597503-139d3726fed5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1469&q=80" alt="Фото 1" data-editable="gallery_image_1">
+                </div>
+                <div class="gallery-item fade-in">
+                    <img src="https://images.unsplash.com/photo-1522673607200-164d1b3ce551?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Фото 2" data-editable="gallery_image_2">
+                </div>
+                <div class="gallery-item fade-in">
+                    <img src="https://images.unsplash.com/photo-1537907510278-f943a0041215?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Фото 3" data-editable="gallery_image_3">
+                </div>
+                <div class="gallery-item fade-in">
+                    <img src="https://images.unsplash.com/photo-1519741347686-c1e30c4c4f01?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Фото 4" data-editable="gallery_image_4">
+                </div>
+                <div class="gallery-item fade-in">
+                    <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1469&q=80" alt="Фото 5" data-editable="gallery_image_5">
+                </div>
+                <div class="gallery-item fade-in">
+                    <img src="https://images.unsplash.com/photo-1563339037-84fb4e623326?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80" alt="Фото 6" data-editable="gallery_image_6">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Модальное окно для галереи -->
+    <div class="gallery-modal">
+        <span class="close-modal">&times;</span>
+        <span class="modal-prev">&#10094;</span>
+        <span class="modal-next">&#10095;</span>
+        <div class="modal-content">
+            <img src="" alt="Увеличенное фото">
+        </div>
+    </div>
+
+    <!-- Секция с обратным отсчетом -->
+    <section class="section countdown" id="countdown">
+        <div class="container">
+            <h2 class="title cursive" data-editable="countdown_title">До нашей свадьбы осталось</h2>
+            
+            <div class="countdown-container" data-editable="countdown_date" data-wedding-date="2023-06-12">
+                <div class="countdown-item">
+                    <span class="countdown-number" id="countdown-days">00</span>
+                    <span class="countdown-label" data-editable="countdown_days_label">Дней</span>
+                </div>
+                
+                <div class="countdown-item">
+                    <span class="countdown-number" id="countdown-hours">00</span>
+                    <span class="countdown-label" data-editable="countdown_hours_label">Часов</span>
+                </div>
+                
+                <div class="countdown-item">
+                    <span class="countdown-number" id="countdown-minutes">00</span>
+                    <span class="countdown-label" data-editable="countdown_minutes_label">Минут</span>
+                </div>
+                
+                <div class="countdown-item">
+                    <span class="countdown-number" id="countdown-seconds">00</span>
+                    <span class="countdown-label" data-editable="countdown_seconds_label">Секунд</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секция с формой RSVP -->
+    <section class="section rsvp" id="rsvp">
+        <div class="container">
+            <h2 class="title cursive fade-in" data-editable="rsvp_title">Подтверждение присутствия</h2>
+            <div class="floral-divider"></div>
+            
+            <div class="rsvp-form fade-in">
+                <form id="rsvp-form">
+                    <div class="form-group">
+                        <label class="form-label" for="name" data-editable="rsvp_name_label">Ваше имя и фамилия</label>
+                        <input type="text" class="form-control" id="name" placeholder="Введите ваше полное имя" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="email" data-editable="rsvp_email_label">Email</label>
+                        <input type="email" class="form-control" id="email" placeholder="Введите ваш email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="phone" data-editable="rsvp_phone_label">Телефон</label>
+                        <input type="tel" class="form-control" id="phone" placeholder="Введите ваш телефон" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" data-editable="rsvp_attendance_label">Присутствие</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="attendance" value="yes" checked> <span data-editable="rsvp_yes_text">Да, я приду</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="attendance" value="no"> <span data-editable="rsvp_no_text">К сожалению, не смогу</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="guests" data-editable="rsvp_guests_label">Количество гостей</label>
+                        <select class="form-control" id="guests">
+                            <option value="1" data-editable="rsvp_option_1">1 (только я)</option>
+                            <option value="2" data-editable="rsvp_option_2">2 (я + сопровождающий)</option>
+                            <option value="3" data-editable="rsvp_option_3">3 (я + 2 человека)</option>
+                            <option value="4" data-editable="rsvp_option_4">4 (я + 3 человека)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="message" data-editable="rsvp_message_label">Сообщение для молодоженов</label>
+                        <textarea class="form-control" id="message" rows="4" placeholder="Напишите ваши пожелания или вопросы"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn" data-editable="rsvp_submit_button">Подтвердить</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секция с картой -->
+    <section class="section map" id="location" data-editable="map_section">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2245.3146346985784!2d37.61825001590791!3d55.75628998055731!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46b54a50b315e573%3A0xa886bf5a3d9b2e68!2z0JzQvtGB0LrQvtCy0YHQutC40Lkg0JrRgNC10LzQu9GM!5e0!3m2!1sru!2sru!4v1677158652337!5m2!1sru!2sru" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer" id="footer">
+        <div class="container">
+            <h3 class="cursive" data-editable="footer_title">Анна & Иван</h3>
+            <div class="floral-divider"></div>
+            
+            <div class="footer-text">
+                <p data-editable="footer_text_1">Спасибо, что разделите с нами этот особенный день!</p>
+                <p data-editable="footer_text_2">12 июня 2023 года</p>
+            </div>
+            
+            <div class="social-icons">
+                <a href="#" data-editable="social_fb_link"><i class="bi bi-facebook"></i></a>
+                <a href="#" data-editable="social_insta_link"><i class="bi bi-instagram"></i></a>
+                <a href="#" data-editable="social_twitter_link"><i class="bi bi-twitter"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Подключение иконок Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+
+    <!-- JavaScript для функциональности шаблона -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Плавная прокрутка для якорных ссылок
+            const scrollLinks = document.querySelectorAll('a[href^="#"]');
+            for (const scrollLink of scrollLinks) {
+                scrollLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        window.scrollTo({
+                            top: target.offsetTop,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            }
+            
+            // Эффект параллакса для героя
+            const heroBg = document.querySelector('.hero-bg');
+            window.addEventListener('scroll', function() {
+                const scrollPosition = window.pageYOffset;
+                heroBg.style.transform = `scale(1.1) translateY(${scrollPosition * 0.05}px)`;
+            });
+            
+            // Анимация появления элементов при прокрутке
+            const fadeElements = document.querySelectorAll('.fade-in');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+            
+            fadeElements.forEach(element => {
+                observer.observe(element);
+            });
+            
+            // Галерея с модальным окном
+            const galleryItems = document.querySelectorAll('.gallery-item');
+            const modal = document.querySelector('.gallery-modal');
+            const modalImg = modal.querySelector('img');
+            const closeBtn = document.querySelector('.close-modal');
+            const prevBtn = document.querySelector('.modal-prev');
+            const nextBtn = document.querySelector('.modal-next');
+            let currentIndex = 0;
+            
+            galleryItems.forEach((item, index) => {
+                item.addEventListener('click', function() {
+                    const imgSrc = item.querySelector('img').src;
+                    modalImg.src = imgSrc;
+                    currentIndex = index;
+                    modal.classList.add('show');
+                });
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                modal.classList.remove('show');
+            });
+            
+            prevBtn.addEventListener('click', function() {
+                currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+                modalImg.src = galleryItems[currentIndex].querySelector('img').src;
+            });
+            
+            nextBtn.addEventListener('click', function() {
+                currentIndex = (currentIndex + 1) % galleryItems.length;
+                modalImg.src = galleryItems[currentIndex].querySelector('img').src;
+            });
+            
+            // Закрытие модального окна при клике вне изображения
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+            
+            // Обратный отсчет до свадьбы
+            const countdownElement = document.querySelector('.countdown-container');
+            const weddingDateStr = countdownElement.dataset.weddingDate;
+            const weddingDate = new Date(weddingDateStr);
+            
+            function updateCountdown() {
+                const now = new Date();
+                const diff = weddingDate - now;
+                
+                // Если дата свадьбы уже прошла
+                if (diff < 0) {
+                    document.getElementById('countdown-days').textContent = '00';
+                    document.getElementById('countdown-hours').textContent = '00';
+                    document.getElementById('countdown-minutes').textContent = '00';
+                    document.getElementById('countdown-seconds').textContent = '00';
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdown-days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+            }
+            
+            // Обновление счетчика каждую секунду
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+            
+            // Форма RSVP
+            const rsvpForm = document.getElementById('rsvp-form');
+            if (rsvpForm) {
+                rsvpForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    alert('Спасибо за подтверждение! Мы учли ваш ответ.');
+                    this.reset();
+                });
+            }
+        });
+        
+        // Улучшенные эффекты при прокрутке для параллакса и других элементов
+        document.addEventListener('scroll', function() {
+            const scrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.body.clientHeight;
+            
+            // Параллакс-эффект для секций с фоновыми изображениями
+            document.querySelectorAll('[class*="bg-"]').forEach(bg => {
+                const speed = bg.getAttribute('data-speed') || 0.5;
+                const offset = scrollY * speed;
+                bg.style.transform = `translateY(${offset}px)`;
+            });
+            
+            // Эффект размытия при прокрутке для хедера
+            const heroSection = document.querySelector('.hero');
+            if (heroSection && scrollY > 0) {
+                const blurValue = Math.min(scrollY * 0.02, 10); // Максимальное значение размытия 10px
+                heroSection.style.backdropFilter = `blur(${blurValue}px)`;
+            }
+        });
+
+        // Эффект параллакса при движении мыши
+        document.addEventListener('mousemove', function(e) {
+            const mouseX = e.clientX / window.innerWidth - 0.5;
+            const mouseY = e.clientY / window.innerHeight - 0.5;
+            
+            // Применение эффекта к декоративным элементам
+            document.querySelectorAll('.floral-divider').forEach(element => {
+                const offsetX = mouseX * 20;
+                const offsetY = mouseY * 20;
+                element.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(1)`;
+            });
+        });
+
+        // Инициализация элементов при загрузке страницы
+        window.addEventListener('load', function() {
+            // Проверяем и делаем видимыми элементы, которые находятся в зоне просмотра
+            checkVisibleElements();
+            
+            // Добавляем анимацию для героя
+            const hero = document.querySelector('.hero');
+            if (hero) {
+                hero.classList.add('loaded');
+            }
+            
+            // Инициализируем точки навигации
+            updateNavigationDots();
+        });
+
+        // Обновление активной секции при прокрутке
+        document.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section');
+            const navDots = document.querySelectorAll('.nav-dot');
+            let current = '';
+
+            const scrollY = window.scrollY + window.innerHeight / 2;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                const sectionId = section.getAttribute('id');
+                
+                if (scrollY > sectionTop && scrollY < sectionTop + sectionHeight) {
+                    current = sectionId;
+                }
+            });
+            
+            if (current) {
+                // Обновление активных навигационных точек
+                navDots.forEach(dot => {
+                    dot.classList.remove('active');
+                    if (dot.getAttribute('data-section') === current) {
+                        dot.classList.add('active');
+                    }
+                });
+                
+                // Показываем индикатор текущей секции
+                if (!document.querySelector('.section-indicator')) {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'section-indicator';
+                    document.body.appendChild(indicator);
+                }
+                
+                const sectionIndicator = document.querySelector('.section-indicator');
+                const currentSectionTitle = document.querySelector(`#${current} .title`)?.textContent || 
+                                       document.querySelector(`#${current} h1`)?.textContent || 
+                                       current.charAt(0).toUpperCase() + current.slice(1);
+                
+                sectionIndicator.textContent = currentSectionTitle;
+                sectionIndicator.classList.add('visible');
+
+                // Скрываем индикатор через 2 секунды
+                setTimeout(() => {
+                    sectionIndicator.classList.remove('visible');
+                }, 2000);
+            }
+        });
+
+        // Добавляем обработчики для модального окна галереи
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        const modal = document.querySelector('.gallery-modal');
+        const modalImg = modal.querySelector('img');
+        const closeBtn = document.querySelector('.close-modal');
+        const prevBtn = document.querySelector('.modal-prev');
+        const nextBtn = document.querySelector('.modal-next');
+        let currentIndex = 0;
+
+        // Открываем модальное окно при клике на изображение
+        galleryItems.forEach((item, index) => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const imgSrc = this.querySelector('img').src;
+                modalImg.src = imgSrc;
+                currentIndex = index;
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Запрещаем прокрутку страницы под модальным окном
+                
+                // Анимация появления
+                setTimeout(() => {
+                    modalImg.classList.add('show');
+                }, 100);
+            });
+        });
+
+        // Закрываем модальное окно
+        closeBtn.addEventListener('click', function() {
+            modalImg.classList.remove('show');
+            setTimeout(() => {
+                modal.classList.remove('show');
+                document.body.style.overflow = ''; // Восстанавливаем прокрутку страницы
+            }, 300);
+        });
+
+        // Переключаем на предыдущее изображение
+        prevBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            navigateGallery(-1);
+        });
+
+        // Переключаем на следующее изображение
+        nextBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            navigateGallery(1);
+        });
+
+        // Функция для переключения между изображениями
+        function navigateGallery(direction) {
+            modalImg.classList.remove('show');
+            
+            setTimeout(() => {
+                currentIndex = (currentIndex + direction + galleryItems.length) % galleryItems.length;
+                modalImg.src = galleryItems[currentIndex].querySelector('img').src;
+                
+                setTimeout(() => {
+                    modalImg.classList.add('show');
+                }, 100);
+            }, 300);
+        }
+
+        // Закрытие модального окна при клике на фон
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeBtn.click();
+            }
+        });
+
+        // Управление с клавиатуры
+        document.addEventListener('keydown', function(e) {
+            if (!modal.classList.contains('show')) return;
+            
+            if (e.key === 'Escape') {
+                closeBtn.click();
+            } else if (e.key === 'ArrowLeft') {
+                navigateGallery(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateGallery(1);
+            }
+        });
+
+        // Обратный отсчет до свадьбы
+        const countdownElement = document.querySelector('[data-wedding-date]');
+        if (countdownElement) {
+            const weddingDateStr = countdownElement.getAttribute('data-wedding-date');
+            const weddingDate = new Date(weddingDateStr);
+            
+            function updateCountdown() {
+                const now = new Date();
+                const diff = weddingDate - now;
+                
+                // Если дата свадьбы уже прошла
+                if (diff <= 0) {
+                    document.getElementById('countdown-days').textContent = '00';
+                    document.getElementById('countdown-hours').textContent = '00';
+                    document.getElementById('countdown-minutes').textContent = '00';
+                    document.getElementById('countdown-seconds').textContent = '00';
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdown-days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+            }
+            
+            // Обновляем счетчик каждую секунду
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Обработка формы RSVP
+        const rsvpForm = document.getElementById('rsvp-form');
+        if (rsvpForm) {
+            rsvpForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Здесь может быть ajax-запрос для отправки формы
+                
+                // Пример уведомления
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Отправлено!';
+                
+                // Возврат кнопки в исходное состояние через 3 секунды
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    this.reset();
+                    
+                    // Показываем благодарственное сообщение
+                    const formContainer = this.closest('.rsvp-form');
+                    formContainer.innerHTML = `
+                        <div class="thank-you-message text-center">
+                            <div class="display-1 text-success mb-4"><i class="bi bi-check-circle"></i></div>
+                            <h3 class="mb-4">Спасибо за подтверждение!</h3>
+                            <p>Мы получили ваш ответ и с нетерпением ждем встречи с вами на нашей свадьбе.</p>
+                        </div>
+                    `;
+                }, 1500);
+            });
+        }
+    </script>
+</div>

@@ -1,0 +1,193 @@
+/* Стили для шаблонов */
+
+/* Общие стили для всех шаблонов */
+.template-container {
+    font-family: 'Nunito', sans-serif;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Стили для свадебных шаблонов */
+.wedding-template {
+    padding: 30px;
+    text-align: center;
+    color: #333;
+}
+
+.wedding-template.classic-theme {
+    background-color: #f9f7f5;
+    border: 2px solid #d4c1a9;
+    border-radius: 5px;
+}
+
+.wedding-template .header {
+    margin-bottom: 30px;
+}
+
+.wedding-template h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    color: #7d5a50;
+}
+
+.wedding-template .names {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #7d5a50;
+    margin: 20px 0;
+}
+
+.wedding-template .invitation-text {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin: 20px 0;
+}
+
+.wedding-template .details {
+    margin: 25px 0;
+    padding: 15px;
+    border-top: 1px solid #d4c1a9;
+    border-bottom: 1px solid #d4c1a9;
+}
+
+.wedding-template .date,
+.wedding-template .time,
+.wedding-template .location {
+    margin: 10px 0;
+    font-size: 1.1rem;
+}
+
+.wedding-template .rsvp {
+    font-style: italic;
+    margin-top: 20px;
+}
+
+/* Стили для шаблонов дня рождения */
+.birthday-template {
+    padding: 30px;
+    text-align: center;
+}
+
+.birthday-template.kids-theme {
+    background-color: #f0f9ff;
+    border: 3px dashed #7fb7e8;
+    border-radius: 15px;
+    color: #2c3e50;
+}
+
+.birthday-template h1 {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-size: 2.5rem;
+    color: #ff6b6b;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.birthday-template .birthday-person {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #5a7bca;
+    margin: 20px 0;
+}
+
+.birthday-template .invitation-text {
+    font-size: 1.2rem;
+    line-height: 1.5;
+    margin: 20px 0;
+}
+
+.birthday-template .details {
+    margin: 25px 0;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 10px;
+}
+
+.birthday-template .date,
+.birthday-template .time,
+.birthday-template .location {
+    margin: 10px 0;
+    font-size: 1.1rem;
+}
+
+.birthday-template .rsvp {
+    font-style: italic;
+    margin-top: 20px;
+    color: #666;
+}
+
+/* Стили для шаблонов сертификатов */
+.certificate-template {
+    padding: 40px;
+    text-align: center;
+    border: 10px double #d4af37;
+    background-color: #fffdf7;
+    color: #333;
+}
+
+.certificate-template.achievement {
+    position: relative;
+}
+
+.certificate-template h1 {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 3rem;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.certificate-template h2 {
+    font-size: 1.5rem;
+    color: #777;
+    margin-bottom: 40px;
+}
+
+.certificate-template .recipient-name {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #000;
+    margin: 30px 0 20px;
+}
+
+.certificate-template .achievement-text {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin: 30px 0;
+}
+
+.certificate-template .details {
+    margin-top: 50px;
+}
+
+.certificate-template .date {
+    margin: 10px 0 30px;
+    font-size: 1.1rem;
+}
+
+.certificate-template .signature-block {
+    display: inline-block;
+    border-top: 1px solid #000;
+    padding-top: 10px;
+    min-width: 200px;
+}
+
+.certificate-template .signature {
+    font-style: italic;
+}
+
+/* Стили для редактора шаблонов */
+[data-editable] {
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+[data-editable]:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+[data-editable].editing {
+    background-color: rgba(13, 110, 253, 0.15);
+    outline: 2px dashed #0d6efd;
+}

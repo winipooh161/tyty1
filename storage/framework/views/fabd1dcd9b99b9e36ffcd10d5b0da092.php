@@ -1,0 +1,1 @@
+<?php /**PATH C:\OSPanel\domains\tyty\resources\views/public/partials/template-actions.blade.php ENDPATH**/ ?>

@@ -1,0 +1,50 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-75478a08.css",
+    "isEntry": true,
+    "src": "resources/css/app.css"
+  },
+  "resources/css/mobile-nav-hint.css": {
+    "file": "assets/mobile-nav-hint-309cefe1.css",
+    "isEntry": true,
+    "src": "resources/css/mobile-nav-hint.css"
+  },
+  "resources/css/mobile-nav.css": {
+    "file": "assets/mobile-nav-a6dce782.css",
+    "isEntry": true,
+    "src": "resources/css/mobile-nav.css"
+  },
+  "resources/css/modal-styles.css": {
+    "file": "assets/modal-styles-4ed993c7.js",
+    "isEntry": true,
+    "src": "resources/css/modal-styles.css"
+  },
+  "resources/css/templates.css": {
+    "file": "assets/templates-51d47e9a.css",
+    "isEntry": true,
+    "src": "resources/css/templates.css"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-916c86ec.js",
+    "imports": [
+      "resources/js/mobile-nav-wheel-picker.js"
+    ],
+    "isEntry": true,
+    "src": "resources/js/app.js"
+  },
+  "resources/js/loading-spinner.js": {
+    "file": "assets/loading-spinner-7328c379.js",
+    "isEntry": true,
+    "src": "resources/js/loading-spinner.js"
+  },
+  "resources/js/mobile-nav-wheel-picker.js": {
+    "file": "assets/mobile-nav-wheel-picker-5c4899c8.js",
+    "isEntry": true,
+    "src": "resources/js/mobile-nav-wheel-picker.js"
+  },
+  "resources/js/register-sw.js": {
+    "file": "assets/register-sw-39ddadf2.js",
+    "isEntry": true,
+    "src": "resources/js/register-sw.js"
+  }
+}

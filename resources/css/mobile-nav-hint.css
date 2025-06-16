@@ -1,0 +1,356 @@
+/* Стили для подсказок в мобильной навигации */
+
+/* Подсказка для свайпа вверх */
+.mb-swipe-hint {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1010;
+}
+
+.mb-swipe-hint.show {
+  opacity: 1;
+}
+
+/* Индикатор свайпа для икноки */
+.mb-icon-wrapper.swiping-up {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.mb-icon-wrapper.swiping-up::after {
+  content: '';
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid rgba(0, 123, 255, 0.9);
+  animation: pulse 1s infinite;
+}
+
+/* Стили для всплывающего меню при свайпе */
+.mb-popup-container {
+  position: fixed;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 80%;
+  max-width: 500px;
+  background-color: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1050;
+}
+
+.mb-popup-container.mb-popup-swipeable::before {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 5px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  margin: -5px auto 15px;
+}
+
+.mb-popup-grid {
+  display: flex;
+  grid-template-columns: repeat(1, 0fr);
+  gap: 15px;
+  text-align: center;
+  flex-direction: column;
+}
+
+.mb-popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  z-index: 1040;
+}
+
+/* Анимация пульсации для индикатора свайпа */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Индикатор активности */
+.mb-nav-activity-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  background: #ff3b30;
+  border-radius: 50%;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mb-icon-wrapper[data-has-activity="true"] .mb-nav-activity-indicator {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Стили для кнопки "назад" */
+.mb-icon-wrapper.back-button-active {
+  position: relative;
+  transform: scale(1.05);
+  transition: all 0.3s ease;
+}
+
+.mb-icon-wrapper.back-button-active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background-color: #007bff;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  animation: backButtonPulse 1.5s infinite;
+}
+
+.mb-icon-wrapper.back-button-active .mb-nav-icon {
+  filter: brightness(1.2);
+  animation: backButtonPulse 2s infinite;
+}
+
+@keyframes backButtonPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Улучшенные состояния для иконок */
+.mb-icon-wrapper {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              opacity 0.3s ease;
+}
+
+/* Улучшенный эффект для центрального элемента */
+.mb-icon-wrapper.mb-centered:not(.mb-animation-blocked) {
+  animation: gentlePulse 2s infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    transform: scale(1.1) translateZ(0);
+  }
+  50% {
+    transform: scale(1.15) translateZ(0);
+  }
+}
+
+/* Класс для блокировки анимации */
+.mb-animation-blocked {
+  animation: none !important;
+}
+
+/* Класс для слабого подсвечивания элемента */
+.mb-highlight-item {
+  animation: highlightItem 1s ease-in-out;
+}
+
+@keyframes highlightItem {
+  0%, 100% {
+    box-shadow: 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
+  }
+}
+
+/* Индикатор направления скролла */
+.mb-scroll-indicator {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mb-scroll-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 20px;
+  height: 100%;
+  background: rgba(0, 123, 255, 0.7);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.mb-scroll-indicator.visible {
+  opacity: 1;
+}
+
+.mb-scroll-indicator.scroll-right::before {
+  left: 30px;
+  animation: indicatorPulseRight 1.5s infinite;
+}
+
+.mb-scroll-indicator.scroll-left::before {
+  left: 0;
+  animation: indicatorPulseLeft 1.5s infinite;
+}
+
+@keyframes indicatorPulseRight {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+@keyframes indicatorPulseLeft {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-5px); }
+}
+
+/* Улучшенный эффект для активного элемента */
+.mb-icon-wrapper.mb-active {
+  position: relative;
+}
+
+.mb-icon-wrapper.mb-active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: #007bff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+}
+
+/* Эффект волны при нажатии */
+.mb-touch-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0, 123, 255, 0.2);
+  transform: scale(0);
+  opacity: 1;
+  pointer-events: none;
+  animation: touchRipple 0.8s ease-out forwards;
+}
+
+@keyframes touchRipple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Улучшенный эффект долгого нажатия */
+.mb-long-press-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 123, 255, 0.2) 0%, rgba(0, 123, 255, 0) 70%);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+  animation: longPressRipple 1s ease-out forwards;
+}
+
+@keyframes longPressRipple {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Оптимизация для слабых устройств */
+@media (prefers-reduced-motion: reduce) {
+  .mb-icon-wrapper,
+  .mb-nav-link,
+  .mb-navigation,
+  .mb-popup-container,
+  .mb-popup-backdrop {
+    transition-duration: 0.1s !important;
+    animation-duration: 0.1s !important;
+  }
+  
+  .mb-icon-wrapper.mb-centered:not(.mb-animation-blocked) {
+    animation: none !important;
+  }
+  
+  /* Отключаем сложные анимации */
+  .mb-touch-ripple,
+  .mb-long-press-effect,
+  .mb-scroll-indicator {
+    display: none !important;
+  }
+}
+
+/* Стили для попапа без заголовка */
+.mb-popup-container {
+  padding: 15px !important; /* Уменьшаем отступы, когда нет заголовка */
+}
+
+.mb-popup-grid {
+  margin-top: 0; /* Убираем верхний отступ после удаления заголовка */
+}
+
+/* Улучшенный стиль для попапа с закрытием по свайпу */
+.mb-popup-swipeable::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  margin: -5px auto 12px;
+  position: relative;
+}
+
+/* Индикатор для свайпа вниз */
+.mb-swipe-indicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}

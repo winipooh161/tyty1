@@ -1,0 +1,688 @@
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+/* Подключаем пользовательский шрифт Christopher с правильным путем */
+
+@font-face {
+    font-family: 'Christopher';
+    src: url('http://localhost:5173/resources/fonts/Christopher.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Базовые стили для проекта */
+
+html,
+body {
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
+    touch-action: pan-x pan-y;
+}
+
+body {
+
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+.h5, h5 {
+    font-size: 2.25rem;
+}
+
+.h2, h2 {
+   font-size: 3.25rem;
+}
+
+.h4, h4 {
+     font-size: 3.25rem;
+}
+
+/* Применение шрифта Christopher к определенным элементам */
+
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 .christopher-font {
+    font-family: var(--bs-font-sans-serif);
+        line-height: 100%;    margin-bottom: 0;
+}
+
+/* Дополнительные пользовательские стили */
+
+.card {
+
+    border-radius: 0.375rem;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Стили для боковой навигации */
+
+.sidebar {
+    width: 260px;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+
+}
+
+.sidebar-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    padding: 0.7rem 1rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd !important;
+}
+
+.sidebar .nav-link.active {
+    background-color: #0d6efd;
+    color: white !important;
+}
+
+/* Стили для мобильной навигации */
+
+.mobile-nav {
+    padding: 8px 0;
+
+}
+
+.mobile-top-nav {}
+
+.mobile-nav-link {
+    text-decoration: none;
+    color: #6c757d;
+    display: block;
+    padding: 5px 0;
+    transition: color 0.2s;
+}
+
+.mobile-nav-link.active {
+    color: #0d6efd;
+}
+
+.mobile-nav-link:hover {
+    color: #0d6efd;
+}
+
+.mobile-nav i {
+    font-size: 1.25rem;
+    margin-bottom: 2px;
+}
+
+/* Стили для аватара */
+
+.avatar-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 2px solid #fff;
+}
+
+.mobile-avatar-img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+}
+
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+}
+
+/* Стили для контейнера с контентом */
+
+.content-wrapper {
+    padding-bottom: 70px;
+    /* для мобильной нижней навигации */
+    min-height: 100vh;
+}
+
+@media (max-width: 767.98px) {
+    .content-wrapper {
+        padding-top: 60px;
+        /* для мобильной верхней навигации */
+        padding: 20px 0 0 0 !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .content-wrapper {
+        padding-bottom: 0;
+    }
+}
+
+/* Стили для страницы профиля */
+
+.avatar-upload-container {
+    position: relative;
+    cursor: pointer;
+}
+
+.avatar-upload-container:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.avatar-overlay i {
+    color: white;
+    font-size: 24px;
+}
+
+/* Стили для шаблонов */
+
+/* Общие стили для всех шаблонов */
+
+.template-container {
+    font-family: 'Nunito', sans-serif;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Стили для редактируемых элементов */
+
+[data-editable] {
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 2px;
+}
+
+[data-editable]:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    outline: 1px dashed #ccc;
+}
+
+[data-editable].editing {
+    background-color: rgba(13, 110, 253, 0.15);
+    outline: 2px dashed #0d6efd;
+}
+
+/* Стили для контейнера шаблона */
+
+.template-container {
+    padding: 30px;
+    min-height: 100%;
+    overflow-y: auto;
+    max-height: calc(100vh - 250px);
+    background-color: #fff;
+}
+
+/* Адаптивность на мобильных устройствах */
+
+@media (max-width: 991.98px) {
+    .template-container {
+        max-height: 500px;
+    }
+}
+
+.offcanvas {
+    min-height: 69vh;
+}
+
+/* Стили для редактора на весь экран */
+
+.editor-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+}
+
+/* Стили для контейнера шаблона на весь экран */
+
+.template-container.fullscreen {
+    width: 100%;
+    height: 100%;
+    padding: 30px;
+    overflow-y: auto;
+    background-color: #fff;
+}
+
+/* Стили для плавающих кнопок управления */
+
+.floating-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1050;
+}
+
+.floating-controls .btn {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.floating-controls .btn i {
+    font-size: 1.5rem;
+}
+
+.btn-settings {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-save {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-back {
+    background-color: #f8f9fa;
+    border-color: #f8f9fa;
+    color: #212529;
+}
+
+/* Делаем панель снизу выше и добавляем скроллинг */
+
+.taller-offcanvas {
+    height: 72vh !important;
+    max-height: 80vh !important;
+}
+
+.offcanvas-bottom {
+    border-radius: 15px 15px 0 0;
+
+}
+
+.offcanvas-body {
+    padding-bottom: 30px;
+    overflow-y: auto;
+}
+
+/* Улучшенные стили для редактируемых элементов */
+
+[data-editable] {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 4px;
+    min-height: 24px;
+    /* Минимальная высота для пустых элементов */
+    border-radius: 3px;
+}
+
+[data-editable]:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    outline: 1px dashed #ccc;
+}
+
+[data-editable].editing {
+    background-color: rgba(13, 110, 253, 0.15);
+    outline: 2px solid #0d6efd;
+
+}
+
+[data-editable].editing:focus {
+    outline: 2px solid #0d6efd;
+
+}
+
+/* Стили для вспомогательных элементов интерфейса */
+
+.editing-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+
+}
+
+/* Стили для индикатора текущего поля */
+
+#field-indicator {
+    background-color: rgba(13, 110, 253, 0.9);
+    color: white;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: bold;
+
+}
+
+.indicator-content {
+    white-space: nowrap;
+}
+
+.edit-in-panel-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    font-size: 12px;
+    padding: 0px 8px;
+    line-height: 1.5;
+}
+
+.edit-in-panel-btn:hover {
+    background-color: white;
+    color: #0d6efd;
+}
+
+.row.g-2 {
+    margin-right: 0px;
+    margin-left: 0px;
+}
+
+.row.g-2>.col-4 {
+    padding: 2px;
+    margin-top: 2px !important;
+}
+
+.template-card {
+    transition: all 0.2s ease;
+
+    border-radius: 5px;
+    overflow: hidden;
+    min-height: 200px;
+    position: relative;
+    border: none;
+}
+
+.template-card:hover {
+
+    transform: translateY(-2px);
+}
+
+.template-preview {
+    height: 0;
+    padding-bottom: 100%;
+    /* Квадратные превью как в Instagram */
+    overflow: hidden;
+    height: 100%;
+    position: relative;
+    background-color: #f8f9fa;
+}
+
+.template-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.default-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.template-icon {
+    font-size: 2rem;
+    color: #adb5bd;
+}
+
+.template-status {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 2;
+}
+
+.status-badge {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border-radius: 50%;
+}
+
+.template-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    color: white;
+    padding: 20px 5px 5px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.template-actions {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.template-card:hover .template-actions {
+    opacity: 1;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    max-width: 90%;
+}
+
+.action-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: white;
+    border: none;
+    color: #212529;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.1);
+}
+
+/* Стили для спиннера загрузки */
+
+.loading-spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), visibility 0s linear 0.5s;
+    pointer-events: none;
+}
+
+.loading-spinner-overlay.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), visibility 0s linear 0s;
+    pointer-events: auto;
+}
+
+.loading-spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transform: scale(0.8) translateY(10px);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.loading-spinner-overlay.show .loading-spinner-container {
+    transform: scale(1) translateY(0);
+}
+
+.loading-spinner {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-spinner-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    padding: 8px;
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    animation: spinnerIconRotate 1s linear infinite;
+    transition: all 0.3s ease;
+}
+
+.loading-text {
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    animation: textFadeIn 0.4s ease-out 0.3s forwards;
+    margin-top: 5px;
+}
+
+/* Анимации для спиннера */
+
+@keyframes spinnerIconRotate {
+    0% { 
+        transform: rotate(0deg) scale(1); 
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    25% { 
+        transform: rotate(90deg) scale(1.05); 
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+    50% { 
+        transform: rotate(180deg) scale(1.1); 
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    }
+    75% { 
+        transform: rotate(270deg) scale(1.05); 
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+    100% { 
+        transform: rotate(360deg) scale(1); 
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+}
+
+@keyframes textFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность спиннера */
+
+@media (max-width: 768px) {
+    .loading-spinner {
+        width: 135px;
+        height: 128px;
+    }
+    
+    .loading-spinner-icon {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .loading-text {
+        font-size: 12px;
+    }
+}
+
+/* Специальные эффекты для темной темы */
+
+@media (prefers-color-scheme: dark) {
+    .loading-spinner-overlay {
+        background: rgb(255 255 255 / 67%);
+    }
+    
+    .loading-spinner-icon {
+        background: #ffffff;
+        box-shadow: none !important;
+    }
+    
+    .loading-text {
+        color: #adb5bd;
+    }
+}
