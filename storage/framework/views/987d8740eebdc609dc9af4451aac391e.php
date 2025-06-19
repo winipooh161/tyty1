@@ -1,7 +1,7 @@
 
 
 <?php $__env->startSection('content'); ?>
-<div class="container">
+<div class="">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
             <div class="card shadow-sm border-0 rounded-4">
@@ -76,8 +76,8 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" 
-                                name="email" value="<?php echo e(old('email')); ?>" autocomplete="email">
-
+                                name="email" value="<?php echo e(old('email')); ?>" autocomplete="email"
+                                <?php if(empty(old('email'))): ?> data-no-email="1" <?php endif; ?>>
                             <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -241,6 +241,17 @@ unset($__errorArgs, $__bag); ?>
                 icon.classList.add('bi-eye');
             }
         });
+        
+        // Удаляем name="email" если поле пустое перед отправкой формы
+        const regForm = document.querySelector('form[action="<?php echo e(route('register')); ?>"]');
+        if (regForm) {
+            regForm.addEventListener('submit', function(e) {
+                const emailInput = regForm.querySelector('input#email');
+                if (emailInput && !emailInput.value) {
+                    emailInput.removeAttribute('name');
+                }
+            });
+        }
     });
 </script>
 <?php $__env->stopSection(); ?>

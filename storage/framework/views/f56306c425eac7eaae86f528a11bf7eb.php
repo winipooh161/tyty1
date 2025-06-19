@@ -67,57 +67,41 @@
                 <?php $__currentLoopData = $acquiredTemplates; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $acquisition): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php if($acquisition->userTemplate): ?> <!-- Проверяем, что шаблон существует -->
                     <div class="col-4">
-                        <div class="card h-100 template-card">
-                            <!-- Превью карточки -->
-                            <div class="card-img-top template-preview">
-                                <?php if($acquisition->userTemplate->cover_path): ?>
-                                    <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
-                                        <video src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                            class="img-fluid" autoplay loop muted></video>
+                        <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="text-decoration-none template-card-link">
+                            <div class="card h-100 template-card">
+                                <!-- Превью карточки -->
+                                <div class="card-img-top template-preview">
+                                    <?php if($acquisition->userTemplate->cover_path): ?>
+                                        <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
+                                            <video src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                class="img-fluid" autoplay loop muted></video>
+                                        <?php else: ?>
+                                            <img src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                        <?php endif; ?>
                                     <?php else: ?>
-                                        <img src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                            alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                        <div class="default-preview d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-file-earmark-text template-icon"></i>
+                                        </div>
                                     <?php endif; ?>
-                                <?php else: ?>
-                                    <div class="default-preview d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-file-earmark-text template-icon"></i>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <!-- Статус шаблона -->
-                                <div class="template-status">
-                                    <?php if($acquisition->status === 'active'): ?>
-                                        <span class="badge bg-success status-badge" title="Активный">✓</span>
-                                    <?php elseif($acquisition->status === 'used'): ?>
-                                        <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <!-- Индикатор папки, если шаблон в папке -->
-                                <?php if($acquisition->folder_id): ?>
-                                <div class="template-folder-indicator">
-                                    <span class="badge rounded-pill" style="background-color: <?php echo e($acquisition->folder->color); ?>;">
-                                        <i class="bi bi-folder-fill"></i>
-                                    </span>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <!-- Кнопки действий -->
-                            <div class="template-actions">
-                                <div class="action-buttons">
-                                    <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="action-btn" title="Просмотреть" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     
-                                    <!-- Кнопка перемещения в папку -->
-                                    <button type="button" class="action-btn" title="Переместить в папку" 
-                                            data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                            data-template-id="<?php echo e($acquisition->id); ?>" 
-                                            data-template-name="<?php echo e($acquisition->userTemplate->name); ?>"
-                                            data-current-folder="<?php echo e($acquisition->folder_id ?? ''); ?>">
-                                        <i class="bi bi-folder-symlink"></i>
-                                    </button>
+                                    <!-- Статус шаблона -->
+                                    <div class="template-status">
+                                        <?php if($acquisition->status === 'active'): ?>
+                                            <span class="badge bg-success status-badge" title="Активный">✓</span>
+                                        <?php elseif($acquisition->status === 'used'): ?>
+                                            <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <!-- Индикатор папки, если шаблон в папке -->
+                                    <?php if($acquisition->folder_id): ?>
+                                    <div class="template-folder-indicator">
+                                        <span class="badge rounded-pill" style="background-color: <?php echo e($acquisition->folder->color); ?>;">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </span>
+                                    </div>
+                                    <?php endif; ?>
                                     
                                     <!-- Отображение автора шаблона -->
                                     <div class="template-owner">
@@ -128,7 +112,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <?php endif; ?>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -141,52 +125,37 @@
                 <?php $__currentLoopData = $acquiredTemplates->where('status', 'active'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $acquisition): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php if($acquisition->userTemplate): ?>
                     <div class="col-4">
-                        <div class="card h-100 template-card">
-                            <!-- Аналогичное содержимое карточки как выше -->
-                            <div class="card-img-top template-preview">
-                                <?php if($acquisition->userTemplate->cover_path): ?>
-                                    <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
-                                        <video src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                            class="img-fluid" autoplay loop muted></video>
+                        <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="text-decoration-none template-card-link">
+                            <div class="card h-100 template-card">
+                                <div class="card-img-top template-preview">
+                                    <?php if($acquisition->userTemplate->cover_path): ?>
+                                        <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
+                                            <video src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                class="img-fluid" autoplay loop muted></video>
+                                        <?php else: ?>
+                                            <img src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                        <?php endif; ?>
                                     <?php else: ?>
-                                        <img src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                            alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                        <div class="default-preview d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-file-earmark-text template-icon"></i>
+                                        </div>
                                     <?php endif; ?>
-                                <?php else: ?>
-                                    <div class="default-preview d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-file-earmark-text template-icon"></i>
+                                    
+                                    <div class="template-status">
+                                        <span class="badge bg-success status-badge" title="Активный">✓</span>
                                     </div>
-                                <?php endif; ?>
-                                
-                                <div class="template-status">
-                                    <span class="badge bg-success status-badge" title="Активный">✓</span>
-                                </div>
-                                
-                                <!-- Индикатор папки, если шаблон в папке -->
-                                <?php if($acquisition->folder_id): ?>
-                                <div class="template-folder-indicator">
-                                    <span class="badge rounded-pill" style="background-color: <?php echo e($acquisition->folder->color); ?>;">
-                                        <i class="bi bi-folder-fill"></i>
-                                    </span>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <div class="template-actions">
-                                <div class="action-buttons">
-                                    <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="action-btn" title="Просмотреть" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     
-                                    <!-- Кнопка перемещения в папку -->
-                                    <button type="button" class="action-btn" title="Переместить в папку" 
-                                            data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                            data-template-id="<?php echo e($acquisition->id); ?>" 
-                                            data-template-name="<?php echo e($acquisition->userTemplate->name); ?>"
-                                            data-current-folder="<?php echo e($acquisition->folder_id ?? ''); ?>">
-                                        <i class="bi bi-folder-symlink"></i>
-                                    </button>
+                                    <!-- Индикатор папки, если шаблон в папке -->
+                                    <?php if($acquisition->folder_id): ?>
+                                    <div class="template-folder-indicator">
+                                        <span class="badge rounded-pill" style="background-color: <?php echo e($acquisition->folder->color); ?>;">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </span>
+                                    </div>
+                                    <?php endif; ?>
                                     
+                                    <!-- Отображение автора шаблона -->
                                     <div class="template-owner">
                                         <span class="badge bg-dark">
                                             Автор: <?php echo e($acquisition->userTemplate->user->name); ?>
@@ -195,7 +164,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <?php endif; ?>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -208,52 +177,37 @@
                 <?php $__currentLoopData = $acquiredTemplates->where('status', 'used'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $acquisition): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php if($acquisition->userTemplate): ?>
                     <div class="col-4">
-                        <div class="card h-100 template-card">
-                            <!-- Аналогичное содержимое карточки как выше -->
-                            <div class="card-img-top template-preview">
-                                <?php if($acquisition->userTemplate->cover_path): ?>
-                                    <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
-                                        <video src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                            class="img-fluid" autoplay loop muted></video>
+                        <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="text-decoration-none template-card-link">
+                            <div class="card h-100 template-card">
+                                <div class="card-img-top template-preview">
+                                    <?php if($acquisition->userTemplate->cover_path): ?>
+                                        <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
+                                            <video src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                class="img-fluid" autoplay loop muted></video>
+                                        <?php else: ?>
+                                            <img src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                        <?php endif; ?>
                                     <?php else: ?>
-                                        <img src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                            alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                        <div class="default-preview d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-file-earmark-text template-icon"></i>
+                                        </div>
                                     <?php endif; ?>
-                                <?php else: ?>
-                                    <div class="default-preview d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-file-earmark-text template-icon"></i>
+                                    
+                                    <div class="template-status">
+                                        <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
                                     </div>
-                                <?php endif; ?>
-                                
-                                <div class="template-status">
-                                    <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
-                                </div>
-                                
-                                <!-- Индикатор папки, если шаблон в папке -->
-                                <?php if($acquisition->folder_id): ?>
-                                <div class="template-folder-indicator">
-                                    <span class="badge rounded-pill" style="background-color: <?php echo e($acquisition->folder->color); ?>;">
-                                        <i class="bi bi-folder-fill"></i>
-                                    </span>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <div class="template-actions">
-                                <div class="action-buttons">
-                                    <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="action-btn" title="Просмотреть" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     
-                                    <!-- Кнопка перемещения в папку -->
-                                    <button type="button" class="action-btn" title="Переместить в папку" 
-                                            data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                            data-template-id="<?php echo e($acquisition->id); ?>" 
-                                            data-template-name="<?php echo e($acquisition->userTemplate->name); ?>"
-                                            data-current-folder="<?php echo e($acquisition->folder_id ?? ''); ?>">
-                                        <i class="bi bi-folder-symlink"></i>
-                                    </button>
+                                    <!-- Индикатор папки, если шаблон в папке -->
+                                    <?php if($acquisition->folder_id): ?>
+                                    <div class="template-folder-indicator">
+                                        <span class="badge rounded-pill" style="background-color: <?php echo e($acquisition->folder->color); ?>;">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </span>
+                                    </div>
+                                    <?php endif; ?>
                                     
+                                    <!-- Отображение автора шаблона -->
                                     <div class="template-owner">
                                         <span class="badge bg-dark">
                                             Автор: <?php echo e($acquisition->userTemplate->user->name); ?>
@@ -262,7 +216,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <?php endif; ?>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -279,55 +233,40 @@
                         <?php $__currentLoopData = $folderTemplates; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $acquisition): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <?php if($acquisition->userTemplate): ?>
                             <div class="col-4">
-                                <div class="card h-100 template-card">
-                                    <!-- Превью карточки -->
-                                    <div class="card-img-top template-preview">
-                                        <?php if($acquisition->userTemplate->cover_path): ?>
-                                            <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
-                                                <video src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                                    class="img-fluid" autoplay loop muted></video>
+                                <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="text-decoration-none template-card-link">
+                                    <div class="card h-100 template-card">
+                                        <!-- Превью карточки -->
+                                        <div class="card-img-top template-preview">
+                                            <?php if($acquisition->userTemplate->cover_path): ?>
+                                                <?php if($acquisition->userTemplate->cover_type === 'video'): ?>
+                                                    <video src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                        class="img-fluid" autoplay loop muted></video>
+                                                <?php else: ?>
+                                                    <img src="<?php echo e(asset('storage/'.$acquisition->userTemplate->cover_path)); ?>" 
+                                                        alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                                <?php endif; ?>
                                             <?php else: ?>
-                                                <img src="<?php echo e(asset('storage/template_covers/'.$acquisition->userTemplate->cover_path)); ?>" 
-                                                    alt="<?php echo e($acquisition->userTemplate->name); ?>" class="img-fluid">
+                                                <div class="default-preview d-flex align-items-center justify-content-center">
+                                                    <i class="bi bi-file-earmark-text template-icon"></i>
+                                                </div>
                                             <?php endif; ?>
-                                        <?php else: ?>
-                                            <div class="default-preview d-flex align-items-center justify-content-center">
-                                                <i class="bi bi-file-earmark-text template-icon"></i>
+                                            
+                                            <!-- Статус шаблона -->
+                                            <div class="template-status">
+                                                <?php if($acquisition->status === 'active'): ?>
+                                                    <span class="badge bg-success status-badge" title="Активный">✓</span>
+                                                <?php elseif($acquisition->status === 'used'): ?>
+                                                    <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
+                                                <?php endif; ?>
                                             </div>
-                                        <?php endif; ?>
-                                        
-                                        <!-- Статус шаблона -->
-                                        <div class="template-status">
-                                            <?php if($acquisition->status === 'active'): ?>
-                                                <span class="badge bg-success status-badge" title="Активный">✓</span>
-                                            <?php elseif($acquisition->status === 'used'): ?>
-                                                <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
-                                            <?php endif; ?>
-                                        </div>
-                                        
-                                        <div class="template-folder-indicator">
-                                            <span class="badge rounded-pill" style="background-color: <?php echo e($folder->color); ?>;">
-                                                <i class="bi bi-folder-fill"></i>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Кнопки действий -->
-                                    <div class="template-actions">
-                                        <div class="action-buttons">
-                                            <a href="<?php echo e(route('public.template', $acquisition->userTemplate->id)); ?>" class="action-btn" title="Просмотреть" target="_blank">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
                                             
-                                            <!-- Кнопка перемещения в папку -->
-                                            <button type="button" class="action-btn" title="Переместить в папку" 
-                                                    data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                                    data-template-id="<?php echo e($acquisition->id); ?>" 
-                                                    data-template-name="<?php echo e($acquisition->userTemplate->name); ?>"
-                                                    data-current-folder="<?php echo e($folder->id); ?>">
-                                                <i class="bi bi-folder-symlink"></i>
-                                            </button>
+                                            <div class="template-folder-indicator">
+                                                <span class="badge rounded-pill" style="background-color: <?php echo e($folder->color); ?>;">
+                                                    <i class="bi bi-folder-fill"></i>
+                                                </span>
+                                            </div>
                                             
+                                            <!-- Отображение автора шаблона -->
                                             <div class="template-owner">
                                                 <span class="badge bg-dark">
                                                     Автор: <?php echo e($acquisition->userTemplate->user->name); ?>
@@ -336,7 +275,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
                             <?php endif; ?>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -517,8 +456,8 @@
         padding: 4px 8px;
         border-radius: 10px;
         opacity: 0.9;
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #333;
+        background-color: rgba(33, 37, 41, 0.8);
+        color: #fff;
     }
     
     /* Стили для индикатора папки */
@@ -538,7 +477,8 @@
     
     /* Стили для пустых карточек */
     .empty-template-card {
-     
+        border: 2px dashed #e9ecef;
+        background-color: #f8f9fa;
         opacity: 0.6;
         cursor: default;
         pointer-events: none;
@@ -559,13 +499,13 @@
         background-color: transparent;
     }
     
-    /* Убираем эффект hover для пустых карточек */
-    .empty-template-card:hover {
-        transform: none;
-        box-shadow: none;
+    /* Улучшенные стили для кликабельных карточек */
+    .template-card-link {
+        display: block;
+        color: inherit;
+        text-decoration: none;
     }
     
-    /* Обновленные стили карточек */
     .template-card {
         border: none;
         border-radius: 12px;
@@ -574,9 +514,9 @@
         transition: all 0.3s ease;
     }
     
-    .template-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    .template-card-link:hover .template-card {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
     
     .template-preview {
@@ -591,12 +531,22 @@
     
     /* Стили для статусных индикаторов */
     .status-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
         padding: 4px 6px;
         border-radius: 50%;
         font-size: 10px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        z-index: 2;
     }
     
+    /* Убираем эффект hover для пустых карточек */
+    .empty-template-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
     /* Адаптивные стили для вкладок */
     .nav-tabs {
         border-bottom: 1px solid #e9ecef;
@@ -665,7 +615,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Управление предпросмотром цвета папки при создании
+            / Управление предпросмотром цвета папки при создании
             const folderColor = document.getElementById('folder-color');
             const folderColorPreview = document.getElementById('folder-color-preview');
             
@@ -675,7 +625,7 @@
                 });
             }
             
-            // Управление предпросмотром цвета папки при редактировании
+            / Управление предпросмотром цвета папки при редактировании
             const editFolderColor = document.getElementById('edit-folder-color');
             const editFolderColorPreview = document.getElementById('edit-folder-color-preview');
             
@@ -685,7 +635,7 @@
                 });
             }
             
-            // Заполнение данных для редактирования папки
+            / Заполнение данных для редактирования папки
             document.querySelectorAll('[data-bs-target="#editFolderModal"]').forEach(element => {
                 element.addEventListener('click', function() {
                     const folderId = this.getAttribute('data-folder-id');
@@ -699,7 +649,7 @@
                 });
             });
             
-            // Заполнение данных для удаления папки
+            / Заполнение данных для удаления папки
             document.querySelectorAll('[data-bs-target="#deleteFolderModal"]').forEach(element => {
                 element.addEventListener('click', function() {
                     const folderId = this.getAttribute('data-folder-id');
@@ -710,7 +660,7 @@
                 });
             });
             
-            // Заполнение данных для перемещения шаблона
+            / Заполнение данных для перемещения шаблона
             document.querySelectorAll('[data-bs-target="#moveTemplateModal"]').forEach(element => {
                 element.addEventListener('click', function() {
                     const templateId = this.getAttribute('data-template-id');
@@ -720,7 +670,7 @@
                     document.getElementById('move-template-id').value = templateId;
                     document.getElementById('move-template-name').textContent = templateName;
                     
-                    // Устанавливаем текущую папку в форме
+                    / Устанавливаем текущую папку в форме
                     if (currentFolder) {
                         const radioButton = document.querySelector(
                             `input[name="folder_id"][value="${currentFolder}"]`);
@@ -750,5 +700,5 @@
     <?php endif; ?>
 
 <?php $__env->stopSection(); ?>
-
+          
 <?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\OSPanel\domains\tyty\resources\views/home.blade.php ENDPATH**/ ?>

@@ -169,326 +169,204 @@ const PublicTemplateHandler = (function() {
 })();
 
 /**
- * Series Template Handler - модуль для обработки серийных шаблонов
- * Взаимодействует с TemplateJS из шаблонов
+ * SeriesTemplateHandler - модуль для обработки серийных шаблонов
+ * и их отображения на публичной странице
  */
-const SeriesTemplateHandler = (function() {
-    // Приватные переменные
-    let config = {};
-    let seriesData = {};
+window.SeriesTemplateHandler = (function() {
+    let config = {
+        debug: true,
+        selectors: {
+            seriesQuantity: '[data-editable="series_quantity"]',
+            seriesReceived: '[data-editable="series_received"]',
+            scanCount: '[data-editable="scan_count"]',
+            requiredScans: '[data-editable="required_scans"]'
+        },
+        seriesData: null
+    };
     
     /**
-     * Инициализация обработчика серийных шаблонов
-     * @param {Object} options - Параметры инициализации
+     * Инициализация обработчика
      */
     function init(options = {}) {
-        console.log('SeriesTemplateHandler: Инициализация');
+        // Объединяем настройки
+        config = {...config, ...options};
         
-        // Сохраняем конфигурацию
-        config = {
-            selectors: {
-                seriesQuantity: '[data-editable="series_quantity"]',
-                seriesReceived: '[data-editable="series_received"]',
-                scanCount: '[data-editable="scan_count"]',
-                requiredScans: '[data-editable="required_scans"]'
-            },
-            ...options
-        };
+        // Получаем данные о серии
+        config.seriesData = window.seriesDataFromServer || null;
         
-        // Извлекаем и выполняем скрипты из шаблона
-        extractAndRunScripts();
+        if (config.debug) {
+            console.log('SeriesTemplateHandler initialized with data:', config.seriesData);
+        }
         
-        // Попытка инициализации TemplateJS вручную, если он доступен
-        initializeTemplateJS();
+        // Если есть данные о серии, заполняем поля
+        if (config.seriesData) {
+            setTimeout(fillSeriesData, 300);
+        }
         
-        // Обновляем пользовательский интерфейс
-        updateUI();
+        // Добавляем обработчики форм получения шаблона
+        initAcquireHandlers();
         
         return this;
     }
     
     /**
-     * Извлекает и выполняет все скрипты из шаблона
+     * Инициализация обработчиков получения шаблона
      */
-    function extractAndRunScripts() {
+    function initAcquireHandlers() {
+        // Находим форму получения шаблона
+        const acquireForm = document.getElementById('acquireTemplateForm');
+        
+        if (acquireForm) {
+            if (config.debug) {
+                console.log('Found acquire form, setting up handler');
+            }
+            
+            // Проверяем наличие всех необходимых данных для отправки
+            const token = acquireForm.querySelector('input[name="_token"]');
+            const submitBtn = acquireForm.querySelector('button[type="submit"]');
+            
+            if (!token) {
+                console.error('CSRF token not found in form!');
+                
+                // Создаем и добавляем токен, если его нет
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (csrfToken) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '_token';
+                    tokenInput.value = csrfToken.getAttribute('content');
+                    acquireForm.appendChild(tokenInput);
+                    
+                    console.log('Added CSRF token to form');
+                }
+            }
+        }
+    }
+    
+    /**
+     * Заполнение полей данными о серии
+     */
+    function fillSeriesData() {
         try {
-            const templateContent = document.getElementById('template-content');
-            if (!templateContent) return;
-            
-            console.log('Extracting scripts from template content');
-            
-            // Находим все скрипты в контенте
-            const scriptElements = templateContent.querySelectorAll('script');
-            if (scriptElements.length === 0) {
-                console.log('No script elements found in template');
+            if (!config.seriesData) {
+                if (config.debug) {
+                    console.warn('No series data available');
+                }
                 return;
             }
             
-            console.log(`Found ${scriptElements.length} script elements`);
+            // Обновляем поле количества
+            updateField(
+                config.selectors.seriesQuantity, 
+                config.seriesData.series_quantity
+            );
             
-            // Обрабатываем каждый скрипт
-            scriptElements.forEach((oldScript, index) => {
-                // Создаем новый элемент script
-                const newScript = document.createElement('script');
-                
-                // Копируем атрибуты
-                Array.from(oldScript.attributes).forEach(attr => {
-                    newScript.setAttribute(attr.name, attr.value);
-                });
-                
-                // Получаем содержимое скрипта
-                let scriptContent = oldScript.innerHTML;
-                
-                // Проверяем, не обрезан ли скрипт
-                if (scriptContent.includes('addEven…') || scriptContent.endsWith('addEven')) {
-                    console.warn('Script content was truncated, using full script content');
+            // Обновляем поле полученных шаблонов
+            updateField(
+                config.selectors.seriesReceived, 
+                config.seriesData.acquired_count
+            );
+            
+            // Обновляем количество сканирований
+            updateField(
+                config.selectors.scanCount, 
+                config.seriesData.scan_count
+            );
+            
+            // Обновляем требуемое количество сканирований
+            updateField(
+                config.selectors.requiredScans, 
+                config.seriesData.required_scans
+            );
+            
+            // Проверяем, можно ли получить шаблон (остались ли свободные экземпляры)
+            const availableCount = config.seriesData.series_quantity - config.seriesData.acquired_count;
+            if (availableCount <= 0) {
+                const acquireForm = document.getElementById('acquireTemplateForm');
+                if (acquireForm) {
+                    const submitBtn = acquireForm.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i> Нет доступных экземпляров';
+                    }
                     
-                    // Исправляем обрезанное содержимое для elem.addEventListener
-                    scriptContent = scriptContent.replace('elem.addEven…', 
-                        'elem.addEventListener(\'keydown\', function(e) { if (e.key === \'Enter\') { e.preventDefault(); this.blur(); } });');
+                    // Добавляем предупреждение
+                    const warningEl = document.createElement('div');
+                    warningEl.className = 'alert alert-warning mt-2';
+                    warningEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i> Все доступные экземпляры уже разобраны';
+                    acquireForm.appendChild(warningEl);
                 }
-                
-                // Устанавливаем содержимое скрипта
-                newScript.text = scriptContent;
-                
-                // Удаляем старый скрипт
-                if (oldScript.parentNode) {
-                    oldScript.parentNode.removeChild(oldScript);
-                }
-                
-                // Добавляем новый скрипт в документ
-                document.body.appendChild(newScript);
-                
-                console.log(`Script ${index + 1} executed`);
-            });
+            }
             
-            console.log('All scripts from template executed');
+            if (config.debug) {
+                console.log('Series data filled successfully:', config.seriesData);
+            }
         } catch (error) {
-            console.error('Error extracting and running scripts:', error);
+            console.error('Error while filling series data:', error);
         }
     }
     
     /**
-     * Попытка инициализировать TemplateJS вручную
+     * Обновление значения поля
      */
-    function initializeTemplateJS() {
-        console.log('SeriesTemplateHandler: Проверка наличия TemplateJS');
-        
-        if (window.TemplateJS) {
-            console.log('SeriesTemplateHandler: TemplateJS найден, инициализация');
+    function updateField(selector, value) {
+        try {
+            const field = document.querySelector(selector);
+            if (!field) return;
             
-            // Проверяем, был ли уже инициализирован TemplateJS
-            if (!window.TemplateJS.initialized) {
-                try {
-                    window.TemplateJS.init({
-                        debug: true,
-                        mode: isEditMode() ? 'edit' : 'view'
-                    });
-                    window.TemplateJS.initialized = true;
-                    console.log('SeriesTemplateHandler: TemplateJS инициализирован');
-                } catch (error) {
-                    console.error('SeriesTemplateHandler: Ошибка инициализации TemplateJS', error);
+            if (config.debug) {
+                console.log(`Updating field ${selector.replace('[data-editable="', '').replace('"]', '')} with value ${value}`, field);
+            }
+            
+            if (field.tagName === 'INPUT') {
+                field.value = value;
+                // Если поле имеет placeholder, обновляем его тоже
+                if (field.hasAttribute('placeholder')) {
+                    field.placeholder = value;
                 }
             } else {
-                console.log('SeriesTemplateHandler: TemplateJS уже инициализирован');
+                field.textContent = value;
             }
-            
-            // Принудительно вызываем некоторые функции из TemplateJS
-            try {
-                if (typeof window.initFaqAccordion === 'function') {
-                    window.initFaqAccordion();
-                    console.log('SeriesTemplateHandler: FAQ аккордеон инициализирован');
-                }
-                
-                if (typeof window.initTemplateDatePickers === 'function') {
-                    window.initTemplateDatePickers();
-                    console.log('SeriesTemplateHandler: Выбор дат инициализирован');
-                }
-                
-                if (typeof window.processTemplateLinks === 'function') {
-                    window.processTemplateLinks();
-                    console.log('SeriesTemplateHandler: Ссылки обработаны');
-                }
-            } catch (error) {
-                console.warn('SeriesTemplateHandler: Ошибка вызова вспомогательных функций', error);
-            }
-        } else {
-            console.warn('SeriesTemplateHandler: TemplateJS не найден');
-            
-            // Если TemplateJS не найден, пробуем инициализировать аккордеон сами
-            initFaqAccordion();
+        } catch (error) {
+            console.error(`Error updating field ${selector}:`, error);
         }
     }
     
     /**
-     * Определяет, находимся ли мы в режиме редактирования
-     * @returns {boolean} true если это режим редактирования
-     */
-    function isEditMode() {
-        const url = window.location.href;
-        return url.includes('/editor') || url.includes('/create-new');
-    }
-    
+     * Извлечение и выполнени
     /**
-     * Резервная функция инициализации аккордеона FAQ
+     * Инициализация обработчиков событий
      */
-    function initFaqAccordion() {
-        console.log('SeriesTemplateHandler: Резервная инициализация FAQ аккордеона');
-        
-        const faqQuestions = document.querySelectorAll('.faq-question');
-        console.log(`SeriesTemplateHandler: Найдено ${faqQuestions.length} вопросов FAQ`);
-        
-        faqQuestions.forEach(function(question) {
-            // Проверяем, не был ли уже добавлен обработчик
-            if (!question.hasAttribute('data-handler-attached')) {
-                question.setAttribute('data-handler-attached', 'true');
+    function initEventHandlers() {
+        // Обрабатываем нажатия на кнопки
+        document.querySelectorAll('form[onsubmit*="handleFormSubmit"]').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                // Форма будет отправлена через стандартный механизм
+                // Но мы можем добавить дополнительные проверки
+                const submitButton = form.querySelector('button[type="submit"]');
                 
-                question.addEventListener('click', function() {
-                    const faqItem = this.closest('.faq-item');
-                    
-                    if (faqItem) {
-                        const isActive = faqItem.classList.contains('active');
-                        
-                        // Закрываем все элементы
-                        document.querySelectorAll('.faq-item').forEach(item => {
-                            item.classList.remove('active');
-                        });
-                        
-                        // Если элемент не был активен, открываем его
-                        if (!isActive) {
-                            faqItem.classList.add('active');
-                        }
-                    }
-                });
-                
-                console.log('SeriesTemplateHandler: Добавлен обработчик для FAQ вопроса');
-            }
+                if (submitButton) {
+                    // Отключаем кнопку для предотвращения повторной отправки
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Получение...';
+                }
+            });
         });
         
-        // Инициализируем flatpickr если он есть
-        if (typeof flatpickr === 'function') {
-            const dateElements = document.querySelectorAll('.issue-date-s, .issue-date-do');
-            
-            dateElements.forEach(elem => {
-                flatpickr(elem, {
-                    dateFormat: "j F Y г.",
-                    locale: "ru",
-                    allowInput: true,
-                    onOpen: function() {
-                        elem.classList.add('date-selecting');
-                    },
-                    onClose: function() {
-                        elem.classList.remove('date-selecting');
-                    }
-                });
+        // Обрабатываем закрытие уведомлений
+        document.querySelectorAll('.alert .btn-close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', function() {
+                const alert = this.closest('.alert');
+                if (alert) {
+                    alert.style.display = 'none';
+                }
             });
-            
-            console.log('SeriesTemplateHandler: Инициализирован flatpickr');
-        }
+        });
     }
     
-    /**
-     * Обновляет пользовательский интерфейс серийного шаблона
-     */
-    function updateUI() {
-        try {
-            // Проверяем существование полей серии
-            const seriesQuantityField = document.querySelector(config.selectors.seriesQuantity);
-            const seriesReceivedField = document.querySelector(config.selectors.seriesReceived);
-            const scanCountField = document.querySelector(config.selectors.scanCount);
-            const requiredScansField = document.querySelector(config.selectors.requiredScans);
-            
-            if (seriesQuantityField || seriesReceivedField) {
-                console.log('SeriesTemplateHandler: Обнаружены поля серийного шаблона');
-                
-                // Добавляем слушатели событий для полей ввода серии
-                if (seriesQuantityField) {
-                    seriesQuantityField.addEventListener('change', updateSeriesData);
-                    console.log('SeriesTemplateHandler: Добавлен обработчик для поля количества элементов серии');
-                }
-                
-                if (requiredScansField) {
-                    requiredScansField.addEventListener('change', updateSeriesData);
-                    console.log('SeriesTemplateHandler: Добавлен обработчик для поля требуемых сканирований');
-                }
-                
-                // Инициализируем данные серии
-                updateSeriesData();
-            }
-        } catch (error) {
-            console.error('SeriesTemplateHandler: Ошибка обновления UI', error);
-        }
-    }
-    
-    /**
-     * Обновляет данные серии на основе полей ввода
-     */
-    function updateSeriesData() {
-        try {
-            // Получаем значения полей
-            const seriesQuantityField = document.querySelector(config.selectors.seriesQuantity);
-            const requiredScansField = document.querySelector(config.selectors.requiredScans);
-            
-            let quantityValue = 1;
-            let requiredScans = 1;
-            
-            // Получаем значения в зависимости от типа элемента
-            if (seriesQuantityField) {
-                if (seriesQuantityField.tagName === 'INPUT') {
-                    quantityValue = parseInt(seriesQuantityField.value || '1', 10);
-                } else {
-                    quantityValue = parseInt(seriesQuantityField.textContent.trim() || '1', 10);
-                }
-            }
-            
-            if (requiredScansField) {
-                if (requiredScansField.tagName === 'INPUT') {
-                    requiredScans = parseInt(requiredScansField.value || '1', 10);
-                } else {
-                    requiredScans = parseInt(requiredScansField.textContent.trim() || '1', 10);
-                }
-            }
-            
-            // Проверяем валидность значений
-            if (isNaN(quantityValue) || quantityValue < 1) quantityValue = 1;
-            if (isNaN(requiredScans) || requiredScans < 1) requiredScans = 1;
-            
-            // Сохраняем данные серии
-            seriesData = {
-                is_series: quantityValue > 1,
-                series_quantity: quantityValue,
-                required_scans: requiredScans
-            };
-            
-            // Обновляем скрытые поля формы, если они существуют
-            const isSeriesTemplate = document.getElementById('is_series_template');
-            const seriesQuantityValue = document.getElementById('series_quantity_value');
-            const requiredScansValue = document.getElementById('required_scans_value');
-            
-            if (isSeriesTemplate) isSeriesTemplate.value = seriesData.is_series ? '1' : '0';
-            if (seriesQuantityValue) seriesQuantityValue.value = seriesData.series_quantity.toString();
-            if (requiredScansValue) requiredScansValue.value = seriesData.required_scans.toString();
-            
-            console.log('SeriesTemplateHandler: Данные серии обновлены', seriesData);
-        } catch (error) {
-            console.error('SeriesTemplateHandler: Ошибка обновления данных серии', error);
-        }
-    }
-    
-    /**
-     * Получить текущие данные серии
-     * @returns {Object} данные о серии
-     */
-    function getSeriesData() {
-        return seriesData;
-    }
-    
-    // Публичные методы
+    // Публичный API
     return {
-        init,
-        getSeriesData,
-        updateSeriesData,
-        extractAndRunScripts
+        init
     };
 })();
 
@@ -552,15 +430,29 @@ document.addEventListener('DOMContentLoaded', function() {
  * при необходимости
  */
 function loadFullTemplateScripts() {
-    // Проверяем наличие обрезанных скриптов
-    const templateContent = document.getElementById('template-content');
-    if (!templateContent) return;
+    // Проверяем наличие обрезанных скриптов в шаблоне
+    const templateContent = document.getElementById('template-content') || document.getElementById('template-html-content');
+    if (!templateContent) {
+        console.log('Контент шаблона не найден');
+        return;
+    }
     
     const scriptElements = templateContent.querySelectorAll('script');
-    const hasTruncatedScripts = Array.from(scriptElements).some(script => 
-        script.innerHTML.includes('addEven…') || 
-        script.innerHTML.endsWith('addEven')
-    );
+    
+    // Расширяем список паттернов обрезания
+    const hasTruncatedScripts = Array.from(scriptElements).some(script => {
+        const scriptContent = script.innerHTML || '';
+        
+        // Проверяем различные признаки обрезанных скриптов
+        return scriptContent.includes('addEven…') || 
+               scriptContent.endsWith('addEven') || 
+               scriptContent.includes('…') || 
+               /addevent[a-z]*$/i.test(scriptContent) ||
+               scriptContent.includes('function() {') && !scriptContent.includes('function() { }') ||
+               (scriptContent.includes('TemplateJS') && scriptContent.length < 1000);
+    });
+    
+    console.log(`Проверка наличия обрезанных скриптов: ${hasTruncatedScripts ? 'найдены' : 'не найдены'}`);
     
     if (hasTruncatedScripts) {
         console.log('Обнаружены обрезанные скрипты, загружаем полную версию');
@@ -568,7 +460,9 @@ function loadFullTemplateScripts() {
         // Загружаем полную версию TemplateJS
         const templateJsScript = document.createElement('script');
         templateJsScript.src = '/js/template-full.js?v=' + new Date().getTime();
-        templateJsScript.onload = function() {
+        
+        // Добавляем обработчик событий для отслеживания загрузки скрипта
+        templateJsScript.addEventListener('load', function() {
             console.log('Полная версия скрипта загружена');
             
             // Инициализируем TemplateJS с небольшой задержкой
@@ -581,11 +475,40 @@ function loadFullTemplateScripts() {
                     });
                     console.log('TemplateJS инициализирован из полной версии скрипта');
                 }
-            }, 100);
-        };
+                
+                // Также вызываем глобальные функции инициализации, если они определены
+                if (typeof window.initFaqAccordion === 'function') {
+                    window.initFaqAccordion();
+                }
+                if (typeof window.initTemplateDatePickers === 'function') {
+                    window.initTemplateDatePickers();
+                }
+                if (typeof window.processTemplateLinks === 'function') {
+                    window.processTemplateLinks();
+                }
+            }, 200);
+        });
+        
+        templateJsScript.addEventListener('error', function() {
+            console.error('Ошибка загрузки полной версии скрипта');
+            
+            // В качестве запасного варианта загружаем скрипт с CDN
+            const backupScript = document.createElement('script');
+            backupScript.src = 'https://cdn.jsdelivr.net/gh/tytyproject/templates@main/template-full.js?v=' + new Date().getTime();
+            document.body.appendChild(backupScript);
+        });
+        
         document.body.appendChild(templateJsScript);
     }
 }
 
-// Выполняем проверку и загрузку полных скриптов после небольшой задержки
-setTimeout(loadFullTemplateScripts, 1000);
+// Выполняем проверку и загрузку полных скриптов с задержкой
+setTimeout(loadFullTemplateScripts, 500);
+
+// Добавляем дополнительную проверку после полной загрузки документа
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(loadFullTemplateScripts, 1000);
+    
+    // Повторная проверка через 3 секунды для случаев асинхронной загрузки контента
+    setTimeout(loadFullTemplateScripts, 3000);
+});

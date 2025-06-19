@@ -66,57 +66,41 @@
                 @foreach($acquiredTemplates as $acquisition)
                     @if($acquisition->userTemplate) <!-- Проверяем, что шаблон существует -->
                     <div class="col-4">
-                        <div class="card h-100 template-card">
-                            <!-- Превью карточки -->
-                            <div class="card-img-top template-preview">
-                                @if($acquisition->userTemplate->cover_path)
-                                    @if($acquisition->userTemplate->cover_type === 'video')
-                                        <video src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                            class="img-fluid" autoplay loop muted></video>
+                        <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="text-decoration-none template-card-link">
+                            <div class="card h-100 template-card">
+                                <!-- Превью карточки -->
+                                <div class="card-img-top template-preview">
+                                    @if($acquisition->userTemplate->cover_path)
+                                        @if($acquisition->userTemplate->cover_type === 'video')
+                                            <video src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                class="img-fluid" autoplay loop muted></video>
+                                        @else
+                                            <img src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                        @endif
                                     @else
-                                        <img src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                            alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                        <div class="default-preview d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-file-earmark-text template-icon"></i>
+                                        </div>
                                     @endif
-                                @else
-                                    <div class="default-preview d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-file-earmark-text template-icon"></i>
-                                    </div>
-                                @endif
-                                
-                                <!-- Статус шаблона -->
-                                <div class="template-status">
-                                    @if($acquisition->status === 'active')
-                                        <span class="badge bg-success status-badge" title="Активный">✓</span>
-                                    @elseif($acquisition->status === 'used')
-                                        <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
-                                    @endif
-                                </div>
-                                
-                                <!-- Индикатор папки, если шаблон в папке -->
-                                @if($acquisition->folder_id)
-                                <div class="template-folder-indicator">
-                                    <span class="badge rounded-pill" style="background-color: {{ $acquisition->folder->color }};">
-                                        <i class="bi bi-folder-fill"></i>
-                                    </span>
-                                </div>
-                                @endif
-                            </div>
-                            
-                            <!-- Кнопки действий -->
-                            <div class="template-actions">
-                                <div class="action-buttons">
-                                    <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="action-btn" title="Просмотреть" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     
-                                    <!-- Кнопка перемещения в папку -->
-                                    <button type="button" class="action-btn" title="Переместить в папку" 
-                                            data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                            data-template-id="{{ $acquisition->id }}" 
-                                            data-template-name="{{ $acquisition->userTemplate->name }}"
-                                            data-current-folder="{{ $acquisition->folder_id ?? '' }}">
-                                        <i class="bi bi-folder-symlink"></i>
-                                    </button>
+                                    <!-- Статус шаблона -->
+                                    <div class="template-status">
+                                        @if($acquisition->status === 'active')
+                                            <span class="badge bg-success status-badge" title="Активный">✓</span>
+                                        @elseif($acquisition->status === 'used')
+                                            <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
+                                        @endif
+                                    </div>
+                                    
+                                    <!-- Индикатор папки, если шаблон в папке -->
+                                    @if($acquisition->folder_id)
+                                    <div class="template-folder-indicator">
+                                        <span class="badge rounded-pill" style="background-color: {{ $acquisition->folder->color }};">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </span>
+                                    </div>
+                                    @endif
                                     
                                     <!-- Отображение автора шаблона -->
                                     <div class="template-owner">
@@ -126,7 +110,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     @endif
                 @endforeach
@@ -139,52 +123,37 @@
                 @foreach($acquiredTemplates->where('status', 'active') as $acquisition)
                     @if($acquisition->userTemplate)
                     <div class="col-4">
-                        <div class="card h-100 template-card">
-                            <!-- Аналогичное содержимое карточки как выше -->
-                            <div class="card-img-top template-preview">
-                                @if($acquisition->userTemplate->cover_path)
-                                    @if($acquisition->userTemplate->cover_type === 'video')
-                                        <video src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                            class="img-fluid" autoplay loop muted></video>
+                        <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="text-decoration-none template-card-link">
+                            <div class="card h-100 template-card">
+                                <div class="card-img-top template-preview">
+                                    @if($acquisition->userTemplate->cover_path)
+                                        @if($acquisition->userTemplate->cover_type === 'video')
+                                            <video src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                class="img-fluid" autoplay loop muted></video>
+                                        @else
+                                            <img src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                        @endif
                                     @else
-                                        <img src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                            alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                        <div class="default-preview d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-file-earmark-text template-icon"></i>
+                                        </div>
                                     @endif
-                                @else
-                                    <div class="default-preview d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-file-earmark-text template-icon"></i>
+                                    
+                                    <div class="template-status">
+                                        <span class="badge bg-success status-badge" title="Активный">✓</span>
                                     </div>
-                                @endif
-                                
-                                <div class="template-status">
-                                    <span class="badge bg-success status-badge" title="Активный">✓</span>
-                                </div>
-                                
-                                <!-- Индикатор папки, если шаблон в папке -->
-                                @if($acquisition->folder_id)
-                                <div class="template-folder-indicator">
-                                    <span class="badge rounded-pill" style="background-color: {{ $acquisition->folder->color }};">
-                                        <i class="bi bi-folder-fill"></i>
-                                    </span>
-                                </div>
-                                @endif
-                            </div>
-                            
-                            <div class="template-actions">
-                                <div class="action-buttons">
-                                    <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="action-btn" title="Просмотреть" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     
-                                    <!-- Кнопка перемещения в папку -->
-                                    <button type="button" class="action-btn" title="Переместить в папку" 
-                                            data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                            data-template-id="{{ $acquisition->id }}" 
-                                            data-template-name="{{ $acquisition->userTemplate->name }}"
-                                            data-current-folder="{{ $acquisition->folder_id ?? '' }}">
-                                        <i class="bi bi-folder-symlink"></i>
-                                    </button>
+                                    <!-- Индикатор папки, если шаблон в папке -->
+                                    @if($acquisition->folder_id)
+                                    <div class="template-folder-indicator">
+                                        <span class="badge rounded-pill" style="background-color: {{ $acquisition->folder->color }};">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </span>
+                                    </div>
+                                    @endif
                                     
+                                    <!-- Отображение автора шаблона -->
                                     <div class="template-owner">
                                         <span class="badge bg-dark">
                                             Автор: {{ $acquisition->userTemplate->user->name }}
@@ -192,7 +161,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     @endif
                 @endforeach
@@ -205,52 +174,37 @@
                 @foreach($acquiredTemplates->where('status', 'used') as $acquisition)
                     @if($acquisition->userTemplate)
                     <div class="col-4">
-                        <div class="card h-100 template-card">
-                            <!-- Аналогичное содержимое карточки как выше -->
-                            <div class="card-img-top template-preview">
-                                @if($acquisition->userTemplate->cover_path)
-                                    @if($acquisition->userTemplate->cover_type === 'video')
-                                        <video src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                            class="img-fluid" autoplay loop muted></video>
+                        <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="text-decoration-none template-card-link">
+                            <div class="card h-100 template-card">
+                                <div class="card-img-top template-preview">
+                                    @if($acquisition->userTemplate->cover_path)
+                                        @if($acquisition->userTemplate->cover_type === 'video')
+                                            <video src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                class="img-fluid" autoplay loop muted></video>
+                                        @else
+                                            <img src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                        @endif
                                     @else
-                                        <img src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                            alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                        <div class="default-preview d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-file-earmark-text template-icon"></i>
+                                        </div>
                                     @endif
-                                @else
-                                    <div class="default-preview d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-file-earmark-text template-icon"></i>
+                                    
+                                    <div class="template-status">
+                                        <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
                                     </div>
-                                @endif
-                                
-                                <div class="template-status">
-                                    <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
-                                </div>
-                                
-                                <!-- Индикатор папки, если шаблон в папке -->
-                                @if($acquisition->folder_id)
-                                <div class="template-folder-indicator">
-                                    <span class="badge rounded-pill" style="background-color: {{ $acquisition->folder->color }};">
-                                        <i class="bi bi-folder-fill"></i>
-                                    </span>
-                                </div>
-                                @endif
-                            </div>
-                            
-                            <div class="template-actions">
-                                <div class="action-buttons">
-                                    <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="action-btn" title="Просмотреть" target="_blank">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     
-                                    <!-- Кнопка перемещения в папку -->
-                                    <button type="button" class="action-btn" title="Переместить в папку" 
-                                            data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                            data-template-id="{{ $acquisition->id }}" 
-                                            data-template-name="{{ $acquisition->userTemplate->name }}"
-                                            data-current-folder="{{ $acquisition->folder_id ?? '' }}">
-                                        <i class="bi bi-folder-symlink"></i>
-                                    </button>
+                                    <!-- Индикатор папки, если шаблон в папке -->
+                                    @if($acquisition->folder_id)
+                                    <div class="template-folder-indicator">
+                                        <span class="badge rounded-pill" style="background-color: {{ $acquisition->folder->color }};">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </span>
+                                    </div>
+                                    @endif
                                     
+                                    <!-- Отображение автора шаблона -->
                                     <div class="template-owner">
                                         <span class="badge bg-dark">
                                             Автор: {{ $acquisition->userTemplate->user->name }}
@@ -258,7 +212,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     @endif
                 @endforeach
@@ -275,55 +229,40 @@
                         @foreach($folderTemplates as $acquisition)
                             @if($acquisition->userTemplate)
                             <div class="col-4">
-                                <div class="card h-100 template-card">
-                                    <!-- Превью карточки -->
-                                    <div class="card-img-top template-preview">
-                                        @if($acquisition->userTemplate->cover_path)
-                                            @if($acquisition->userTemplate->cover_type === 'video')
-                                                <video src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                                    class="img-fluid" autoplay loop muted></video>
+                                <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="text-decoration-none template-card-link">
+                                    <div class="card h-100 template-card">
+                                        <!-- Превью карточки -->
+                                        <div class="card-img-top template-preview">
+                                            @if($acquisition->userTemplate->cover_path)
+                                                @if($acquisition->userTemplate->cover_type === 'video')
+                                                    <video src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                        class="img-fluid" autoplay loop muted></video>
+                                                @else
+                                                    <img src="{{ asset('storage/'.$acquisition->userTemplate->cover_path) }}" 
+                                                        alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                                @endif
                                             @else
-                                                <img src="{{ asset('storage/template_covers/'.$acquisition->userTemplate->cover_path) }}" 
-                                                    alt="{{ $acquisition->userTemplate->name }}" class="img-fluid">
+                                                <div class="default-preview d-flex align-items-center justify-content-center">
+                                                    <i class="bi bi-file-earmark-text template-icon"></i>
+                                                </div>
                                             @endif
-                                        @else
-                                            <div class="default-preview d-flex align-items-center justify-content-center">
-                                                <i class="bi bi-file-earmark-text template-icon"></i>
+                                            
+                                            <!-- Статус шаблона -->
+                                            <div class="template-status">
+                                                @if($acquisition->status === 'active')
+                                                    <span class="badge bg-success status-badge" title="Активный">✓</span>
+                                                @elseif($acquisition->status === 'used')
+                                                    <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
+                                                @endif
                                             </div>
-                                        @endif
-                                        
-                                        <!-- Статус шаблона -->
-                                        <div class="template-status">
-                                            @if($acquisition->status === 'active')
-                                                <span class="badge bg-success status-badge" title="Активный">✓</span>
-                                            @elseif($acquisition->status === 'used')
-                                                <span class="badge bg-secondary status-badge" title="Использованный">✓</span>
-                                            @endif
-                                        </div>
-                                        
-                                        <div class="template-folder-indicator">
-                                            <span class="badge rounded-pill" style="background-color: {{ $folder->color }};">
-                                                <i class="bi bi-folder-fill"></i>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Кнопки действий -->
-                                    <div class="template-actions">
-                                        <div class="action-buttons">
-                                            <a href="{{ route('public.template', $acquisition->userTemplate->id) }}" class="action-btn" title="Просмотреть" target="_blank">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
                                             
-                                            <!-- Кнопка перемещения в папку -->
-                                            <button type="button" class="action-btn" title="Переместить в папку" 
-                                                    data-bs-toggle="modal" data-bs-target="#moveTemplateModal" 
-                                                    data-template-id="{{ $acquisition->id }}" 
-                                                    data-template-name="{{ $acquisition->userTemplate->name }}"
-                                                    data-current-folder="{{ $folder->id }}">
-                                                <i class="bi bi-folder-symlink"></i>
-                                            </button>
+                                            <div class="template-folder-indicator">
+                                                <span class="badge rounded-pill" style="background-color: {{ $folder->color }};">
+                                                    <i class="bi bi-folder-fill"></i>
+                                                </span>
+                                            </div>
                                             
+                                            <!-- Отображение автора шаблона -->
                                             <div class="template-owner">
                                                 <span class="badge bg-dark">
                                                     Автор: {{ $acquisition->userTemplate->user->name }}
@@ -331,7 +270,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
                             @endif
                         @endforeach
@@ -531,8 +470,8 @@
         padding: 4px 8px;
         border-radius: 10px;
         opacity: 0.9;
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #333;
+        background-color: rgba(33, 37, 41, 0.8);
+        color: #fff;
     }
     
     /* Стили для индикатора папки */
@@ -552,7 +491,8 @@
     
     /* Стили для пустых карточек */
     .empty-template-card {
-     
+        border: 2px dashed #e9ecef;
+        background-color: #f8f9fa;
         opacity: 0.6;
         cursor: default;
         pointer-events: none;
@@ -573,13 +513,13 @@
         background-color: transparent;
     }
     
-    /* Убираем эффект hover для пустых карточек */
-    .empty-template-card:hover {
-        transform: none;
-        box-shadow: none;
+    /* Улучшенные стили для кликабельных карточек */
+    .template-card-link {
+        display: block;
+        color: inherit;
+        text-decoration: none;
     }
     
-    /* Обновленные стили карточек */
     .template-card {
         border: none;
         border-radius: 12px;
@@ -588,9 +528,9 @@
         transition: all 0.3s ease;
     }
     
-    .template-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    .template-card-link:hover .template-card {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
     
     .template-preview {
@@ -605,12 +545,22 @@
     
     /* Стили для статусных индикаторов */
     .status-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
         padding: 4px 6px;
         border-radius: 50%;
         font-size: 10px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        z-index: 2;
     }
     
+    /* Убираем эффект hover для пустых карточек */
+    .empty-template-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
     /* Адаптивные стили для вкладок */
     .nav-tabs {
         border-bottom: 1px solid #e9ecef;
@@ -679,7 +629,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Управление предпросмотром цвета папки при создании
+            / Управление предпросмотром цвета папки при создании
             const folderColor = document.getElementById('folder-color');
             const folderColorPreview = document.getElementById('folder-color-preview');
             
@@ -689,7 +639,7 @@
                 });
             }
             
-            // Управление предпросмотром цвета папки при редактировании
+            / Управление предпросмотром цвета папки при редактировании
             const editFolderColor = document.getElementById('edit-folder-color');
             const editFolderColorPreview = document.getElementById('edit-folder-color-preview');
             
@@ -699,7 +649,7 @@
                 });
             }
             
-            // Заполнение данных для редактирования папки
+            / Заполнение данных для редактирования папки
             document.querySelectorAll('[data-bs-target="#editFolderModal"]').forEach(element => {
                 element.addEventListener('click', function() {
                     const folderId = this.getAttribute('data-folder-id');
@@ -713,7 +663,7 @@
                 });
             });
             
-            // Заполнение данных для удаления папки
+            / Заполнение данных для удаления папки
             document.querySelectorAll('[data-bs-target="#deleteFolderModal"]').forEach(element => {
                 element.addEventListener('click', function() {
                     const folderId = this.getAttribute('data-folder-id');
@@ -724,7 +674,7 @@
                 });
             });
             
-            // Заполнение данных для перемещения шаблона
+            / Заполнение данных для перемещения шаблона
             document.querySelectorAll('[data-bs-target="#moveTemplateModal"]').forEach(element => {
                 element.addEventListener('click', function() {
                     const templateId = this.getAttribute('data-template-id');
@@ -734,7 +684,7 @@
                     document.getElementById('move-template-id').value = templateId;
                     document.getElementById('move-template-name').textContent = templateName;
                     
-                    // Устанавливаем текущую папку в форме
+                    / Устанавливаем текущую папку в форме
                     if (currentFolder) {
                         const radioButton = document.querySelector(
                             `input[name="folder_id"][value="${currentFolder}"]`);
@@ -764,3 +714,4 @@
     @endif
 
 @endsection
+          

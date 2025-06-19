@@ -39,6 +39,8 @@
             this.fillUserData();
             this.fillSeriesData();
             this.initTemplateScripts();
+            this.setupAcquireFormHandler();
+            this.checkForTruncatedScripts();
             
             console.log('TemplateViewer initialized');
         }
@@ -270,13 +272,70 @@
             }, 100);
         }
         
-        // Выполняет скрипты внутри шаблона
+        // Проверяет и вызывает функции инициализации шаблона
+        checkInitFunctions() {
+            setTimeout(() => {
+                // Проверяем наличие функций инициализации и вызываем их
+                if (typeof window.initFaqAccordion === 'function') {
+                    window.initFaqAccordion();
+                }
+                
+                if (typeof window.linkify === 'function') {
+                    const faqAnswer = document.querySelector('[data-editable="faq_answer_1"]');
+                    if (faqAnswer) {
+                        faqAnswer.innerHTML = window.linkify(faqAnswer.textContent || faqAnswer.innerText);
+                    }
+                }
+                
+                // Инициализируем выбор даты, если доступно
+                if (typeof window.initTemplateDatePickers === 'function') {
+                    window.initTemplateDatePickers();
+                } else if (typeof flatpickr === 'function') {
+                    this.initDatePickers();
+                }
+                
+                console.log('Template initialization functions checked and executed');
+            }, 300);
+        }
+        
+        // Инициализирует выбор даты в шаблоне
+        initDatePickers() {
+            const dateElements = document.querySelectorAll('.issue-date-s, .issue-date-do');
+            
+            if (dateElements.length > 0) {
+                console.log('Found date elements, initializing flatpickr');
+                
+                dateElements.forEach(elem => {
+                    flatpickr(elem, {
+                        dateFormat: "j F Y г.",
+                        locale: "ru",
+                        allowInput: true,
+                        onOpen: function() {
+                            elem.classList.add('date-selecting');
+                        },
+                        onClose: function() {
+                            elem.classList.remove('date-selecting');
+                        }
+                    });
+                });
+            }
+        }
+        
+        // Выполняет скрипты внутри шаблона с проверкой на обрезание
         executeScriptsInTemplate(container) {
             if (!container) return;
             
             const scripts = container.querySelectorAll('script');
+            let hasObviousTruncation = false;
             
             scripts.forEach(oldScript => {
+                // Проверяем на признаки обрезания
+                if ((oldScript.textContent || '').includes('…') || 
+                    (oldScript.textContent || '').endsWith('addEven')) {
+                    hasObviousTruncation = true;
+                    return;
+                }
+                
                 const newScript = document.createElement('script');
                 
                 Array.from(oldScript.attributes).forEach(attr => {
@@ -295,23 +354,256 @@
                 
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
+            
+            // Если обнаружены обрезанные скрипты, загружаем полную версию
+            if (hasObviousTruncation) {
+                console.log('Обнаружены обрезанные скрипты при выполнении');
+                setTimeout(() => this.loadFullTemplateScript(), 300);
+            }
         }
         
-        // Проверяет и вызывает функции инициализации шаблона
-        checkInitFunctions() {
-            setTimeout(() => {
-                // Проверяем наличие функций инициализации и вызываем их
-                if (typeof window.initFaqAccordion === 'function') {
-                    window.initFaqAccordion();
+        // Проверяет наличие обрезанных скриптов
+        checkForTruncatedScripts() {
+            const htmlContent = document.getElementById('template-html-content');
+            if (!htmlContent) return;
+            
+            const scripts = htmlContent.querySelectorAll('script');
+            let truncated = false;
+            
+            scripts.forEach(script => {
+                const content = script.textContent || '';
+                if (
+                    content.includes('addEven…') || 
+                    content.includes('…') || 
+                    content.endsWith('addEven') ||
+                    (content.includes('function() {') && !content.includes('function() { }') && content.split('function(').length !== content.split('})').length)
+                ) {
+                    truncated = true;
+                    console.warn('Обнаружен обрезанный скрипт:', content.substring(0, 50) + '...');
+                }
+            });
+            
+            if (truncated) {
+                console.log('Загружаем полную версию скрипта...');
+                this.loadFullTemplateScript();
+            }
+        }
+        
+        // Загружает полную версию скрипта шаблона
+        loadFullTemplateScript() {
+            if (document.querySelector('script[src*="template-full.js"]')) {
+                console.log('Полная версия скрипта уже загружена');
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = '/js/template-full.js?v=' + new Date().getTime();
+            script.onload = () => {
+                console.log('Полная версия скрипта загружена успешно');
+                
+                // Инициализируем компоненты после загрузки
+                if (window.TemplateJS && typeof window.TemplateJS.init === 'function') {
+                    setTimeout(() => {
+                        window.TemplateJS.init({
+                            debug: true,
+                            mode: 'view'
+                        });
+                        
+                        // Дополнительно инициализируем компоненты
+                        if (typeof window.TemplateJS.initAccordion === 'function') {
+                            window.TemplateJS.initAccordion();
+                        }
+                        
+                        if (typeof window.TemplateJS.initDatePickers === 'function') {
+                            window.TemplateJS.initDatePickers();
+                        }
+                    }, 200);
+                }
+            };
+            
+            script.onerror = () => {
+                console.error('Ошибка загрузки скрипта, пробуем резервную копию');
+                const backupScript = document.createElement('script');
+                backupScript.src = 'https://cdn.jsdelivr.net/gh/tytyproject/templates@main/template-full.js?v=' + new Date().getTime();
+                document.body.appendChild(backupScript);
+            };
+            
+            document.body.appendChild(script);
+        }
+        
+        // Настраивает обработчик формы получения шаблона
+        setupAcquireFormHandler() {
+            const acquireForm = document.getElementById('acquireTemplateForm');
+            if (!acquireForm) return;
+            
+            console.log('Setting up acquire form handler');
+            
+            // Проверяем наличие CSRF-токена
+            const csrfToken = acquireForm.querySelector('input[name="_token"]');
+            if (!csrfToken) {
+                console.warn('CSRF token not found in form');
+                
+                // Пытаемся найти токен в meta или создаем новый input
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                if (metaToken) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '_token';
+                    tokenInput.value = metaToken.getAttribute('content');
+                    acquireForm.appendChild(tokenInput);
+                    console.log('Added CSRF token from meta tag');
+                }
+            } else {
+                console.log('CSRF token found in form');
+            }
+            
+            // Проверяем, можно ли получить шаблон на основе серийных данных
+            if (this.seriesData && this.seriesData.acquired_count >= this.seriesData.series_quantity) {
+                const submitButton = acquireForm.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i> Нет доступных экземпляров';
+                    console.log('Disabled submit button - all templates acquired');
+                }
+            }
+            
+            // Устанавливаем обработчик отправки формы
+            acquireForm.addEventListener('submit', this.handleAcquireFormSubmit.bind(this));
+        }
+        
+        // Обработчик отправки формы получения шаблона
+        handleAcquireFormSubmit(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const submitButton = form.querySelector('button[type="submit"]');
+            const statusDiv = document.getElementById('template-acquire-status');
+            
+            console.log('Acquire form submitted', {
+                action: form.action,
+                method: form.method,
+                hasCSRF: !!form.querySelector('input[name="_token"]'),
+                csrfValue: form.querySelector('input[name="_token"]')?.value
+            });
+            
+            // Отключаем кнопку и показываем индикатор загрузки
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Получение...';
+            }
+            
+            // Показываем статус
+            if (statusDiv) {
+                statusDiv.classList.remove('d-none');
+                statusDiv.classList.remove('alert-success', 'alert-danger', 'alert-warning');
+                statusDiv.classList.add('alert-info');
+                statusDiv.querySelector('.message').textContent = 'Отправка запроса...';
+            }
+            
+            // Проверяем и добавляем CSRF токен при необходимости
+            if (!form.querySelector('input[name="_token"]')) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '_token';
+                tokenInput.value = this.config.csrfToken;
+                form.appendChild(tokenInput);
+                console.log('Added missing CSRF token to form');
+            }
+            
+            // Отправляем запрос
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response received', {
+                    status: response.status,
+                    redirected: response.redirected,
+                    url: response.url
+                });
+                
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return;
                 }
                 
-                if (typeof window.linkify === 'function') {
-                    const faqAnswer = document.querySelector('[data-editable="faq_answer_1"]');
-                    if (faqAnswer) {
-                        faqAnswer.innerHTML = window.linkify(faqAnswer.textContent || faqAnswer.innerText);
+                return response.text();
+            })
+            .then(html => {
+                if (!html) return;
+                
+                // Анализируем ответ HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Ищем сообщения
+                const successMsg = doc.querySelector('.alert-success');
+                const errorMsg = doc.querySelector('.alert-danger');
+                const infoMsg = doc.querySelector('.alert-info');
+                
+                if (successMsg) {
+                    console.log('Success message found');
+                    if (statusDiv) {
+                        statusDiv.classList.remove('d-none', 'alert-info', 'alert-danger');
+                        statusDiv.classList.add('alert-success');
+                        statusDiv.querySelector('.message').textContent = successMsg.textContent.trim();
+                    }
+                    
+                    // Перезагружаем страницу через 2 секунды
+                    setTimeout(() => window.location.reload(), 2000);
+                } 
+                else if (errorMsg) {
+                    console.log('Error message found');
+                    if (statusDiv) {
+                        statusDiv.classList.remove('d-none', 'alert-info', 'alert-success');
+                        statusDiv.classList.add('alert-danger');
+                        statusDiv.querySelector('.message').textContent = errorMsg.textContent.trim();
+                    }
+                    
+                    // Восстанавливаем кнопку
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<i class="bi bi-download me-2"></i> Получить шаблон';
                     }
                 }
-            }, 300);
+                else if (infoMsg) {
+                    console.log('Info message found');
+                    if (statusDiv) {
+                        statusDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
+                        statusDiv.classList.add('alert-warning');
+                        statusDiv.querySelector('.message').textContent = infoMsg.textContent.trim();
+                    }
+                    
+                    // Восстанавливаем кнопку
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<i class="bi bi-download me-2"></i> Получить шаблон';
+                    }
+                }
+                else {
+                    // Если нет понятных сообщений, перезагружаем страницу
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error acquiring template:', error);
+                
+                if (statusDiv) {
+                    statusDiv.classList.remove('d-none', 'alert-info', 'alert-success');
+                    statusDiv.classList.add('alert-danger');
+                    statusDiv.querySelector('.message').textContent = 'Произошла ошибка. Пожалуйста, попробуйте позже.';
+                }
+                
+                // Восстанавливаем кнопку
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="bi bi-download me-2"></i> Повторить попытку';
+                }
+            });
         }
     }
 
@@ -322,16 +614,19 @@
         
         // Делаем доступным обработчик отправки формы
         window.handleFormSubmit = function(form, event) {
-            console.log('Form submit started', {
-                action: form.action,
-                method: form.method
-            });
+            console.log('Global form submit handler called');
+            
+            // Проверяем, является ли форма формой для получения шаблона
+            if (form.id === 'acquireTemplateForm' && viewer.handleAcquireFormSubmit) {
+                viewer.handleAcquireFormSubmit(event);
+                return;
+            }
             
             const submitButton = form.querySelector('button[type="submit"]');
             
             if (submitButton) {
                 submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Получение...';
+                submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Обработка...';
                 
                 // Возвращаем кнопку в исходное состояние через 10 секунд в случае ошибки
                 setTimeout(() => {
@@ -342,6 +637,26 @@
                 }, 10000);
             }
         };
+        
+        // Функция для создания файла template-full.js, если его нет
+        function createFullTemplateScript() {
+            const scripts = document.querySelectorAll('#template-html-content script');
+            let fullScriptContent = '';
+            
+            scripts.forEach(script => {
+                if (!script.src && script.textContent) {
+                    fullScriptContent += script.textContent + "\n\n";
+                }
+            });
+            
+            if (fullScriptContent) {
+                // В продакшене тут можно отправить на сервер для сохранения полной версии
+                console.log('Полный скрипт собран, длина:', fullScriptContent.length);
+            }
+        }
+        
+        // В режиме отладки можем собрать полный скрипт
+        // setTimeout(createFullTemplateScript, 3000);
     });
 </script>
 <?php /**PATH C:\OSPanel\domains\tyty\resources\views/public/partials/template-scripts.blade.php ENDPATH**/ ?>
