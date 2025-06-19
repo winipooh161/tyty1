@@ -16,11 +16,12 @@ class TemplateController extends Controller
      */
     public function categories()
     {
-        $categories = TemplateCategory::where('is_active', true)
-            ->orderBy('display_order')
-            ->get();
-            
-        return view('templates.categories', compact('categories'));
+        // Получаем все активные категории шаблонов
+     
+
+  
+
+        return view('templates.categories');
     }
 
     /**

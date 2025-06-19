@@ -68,6 +68,9 @@ class TemplateController extends Controller
             'target_user_id' => 'nullable|exists:users,id',
         ]);
         
+        // Оптимизируем HTML контент перед сохранением
+        $validatedData['html_content'] = $this->optimizeHtmlContent($validatedData['html_content']);
+        
         // Генерируем slug
         $validatedData['slug'] = Str::slug($validatedData['name']);
         
@@ -141,6 +144,9 @@ class TemplateController extends Controller
             'target_user_id' => 'nullable|exists:users,id',
         ]);
 
+        // Оптимизируем HTML контент перед сохранением
+        $validatedData['html_content'] = $this->optimizeHtmlContent($validatedData['html_content']);
+
         // Преобразуем JSON строку в массив
         if (isset($validatedData['editable_fields'])) {
             $validatedData['editable_fields'] = json_decode($validatedData['editable_fields'], true);
@@ -213,4 +219,17 @@ class TemplateController extends Controller
         return redirect()->route('admin.templates.index')
             ->with('success', 'Шаблон успешно удален!');
     }
+
+    /**
+     * Оптимизирует HTML-контент шаблона
+     * 
+     * @param string $htmlContent
+     * @return string
+     */
+    protected function optimizeHtmlContent($htmlContent)
+    {
+        // Больше не выполняем минификацию HTML, просто возвращаем исходный код
+        return $htmlContent;
+    }
 }
+      

@@ -5,7 +5,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/css/app.css',
+                'resources/css/app.css',   'resources/css/style.css',
                 'resources/css/modal-styles.css',
                 'resources/css/templates.css',
                 'resources/css/mobile-nav.css',

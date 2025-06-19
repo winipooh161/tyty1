@@ -7,14 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Carbon\Carbon;
-use App\Models\User;
+use Intervention\Image\Facades\Image;
 
 class ProfileController extends Controller
 {
     /**
-     * Create a new controller instance.
+     * Создание экземпляра контроллера.
      *
      * @return void
      */
@@ -24,7 +22,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Show the user profile.
+     * Показать профиль пользователя.
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
@@ -34,7 +32,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Show the form for editing the user's profile.
+     * Показать форму редактирования профиля пользователя.
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
@@ -44,175 +42,215 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile.
+     * Обновление профиля пользователя через AJAX-запрос
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request)
     {
         $user = Auth::user();
         
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
-            'current_password' => ['nullable', 'required_with:new_password', function ($attribute, $value, $fail) use ($user) {
-                if (!Hash::check($value, $user->password)) {
-                    $fail('Текущий пароль указан неверно.');
-                }
-            }],
-            'new_password' => ['nullable', 'min:8', 'required_with:current_password', 'confirmed'],
-        ]);
-
-        $user->name = $request->name;
-        $user->email = $request->email;
-
-        // Обработка загрузки аватара
-        if ($request->hasFile('avatar')) {
-            // Удаление старого аватара, если он существует
-            if ($user->avatar) {
-                Storage::disk('public')->delete('avatars/' . $user->avatar);
-            }
-
-            $avatar = $request->file('avatar');
-            $filename = time() . '.' . $avatar->getClientOriginalExtension();
-
-            // Создание директории, если она не существует
-            if (!Storage::disk('public')->exists('avatars')) {
-                Storage::disk('public')->makeDirectory('avatars');
-            }
-
-            // Сохранение аватара с изменением размера
-            $img = Image::make($avatar->path());
-            $img->fit(300, 300)->save(storage_path('app/public/avatars/' . $filename));
-
-            $user->avatar = $filename;
-        }
-
-        // Обновление пароля, если он был предоставлен
-        if ($request->filled('new_password')) {
-            $user->password = Hash::make($request->new_password);
-        }
-
-        $user->save();
-
-        return redirect()->route('profile.show')->with('status', 'Профиль успешно обновлен!');
-    }
-
-    /**
-     * Обновить профиль пользователя через AJAX
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function updateAjax(Request $request)
-    {
-        $user = Auth::user();
-        
-        // Валидация основных полей
+        // Валидация запроса
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'birth_date' => ['nullable', 'date'],
-            'gender' => ['nullable', 'string', 'in:male,female'],
-            'current_password' => ['nullable', 'string'],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp',
+            'avatar_base64' => 'nullable|string',
+            'phone' => 'nullable|string|max:20',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string|in:male,female',
+            'current_password' => 'nullable|string',
+            'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
-        
-        // Подготовка данных для обновления
-        $userData = [
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'gender' => $request->gender,
-        ];
-        
-        // Обработка даты рождения
-        if ($request->filled('birth_date')) {
-            $userData['birth_date'] = Carbon::parse($request->birth_date)->format('Y-m-d');
-        }
-        
-        // Обработка изменения пароля
-        if ($request->filled('current_password') && $request->filled('password')) {
-            if (!Hash::check($request->current_password, $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => ['current_password' => ['Текущий пароль указан неверно']]
-                ], 422);
+
+        try {
+            // Проверка текущего пароля при изменении пароля
+            if ($request->filled('password')) {
+                if (!$request->filled('current_password')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Необходимо ввести текущий пароль'
+                    ], 422);
+                }
+                
+                if (!Hash::check($request->current_password, $user->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Неверный текущий пароль'
+                    ], 422);
+                }
+                
+                $user->password = Hash::make($request->password);
             }
-            
-            $userData['password'] = Hash::make($request->password);
-        }
-        
-        // Обновляем данные пользователя
-        $user->update($userData);
-        
-        // Обработка аватара, если был загружен
-        if ($request->hasFile('avatar')) {
-            $avatar = $request->file('avatar');
-            $filename = time() . '.' . $avatar->getClientOriginalExtension();
-            
-            // Удаляем старый аватар, если существует
-            if ($user->avatar && Storage::disk('public')->exists('avatars/' . $user->avatar)) {
-                Storage::disk('public')->delete('avatars/' . $user->avatar);
+
+            // Обработка аватара - обрабатываем и файл, и base64
+            if (($request->hasFile('avatar') || $request->filled('avatar_base64')) && $request->boolean('avatar_updated')) {
+                // Удаляем старый аватар если он существует
+                if ($user->avatar && Storage::disk('public')->exists('avatars/' . $user->avatar)) {
+                    Storage::disk('public')->delete('avatars/' . $user->avatar);
+                }
+                
+                $avatarFileName = null;
+                
+                // Проверяем наличие директории для аватаров
+                if (!Storage::disk('public')->exists('avatars')) {
+                    Storage::disk('public')->makeDirectory('avatars');
+                }
+                
+                // Обрабатываем загруженный файл, если он есть
+                if ($request->hasFile('avatar')) {
+                    $file = $request->file('avatar');
+                    $avatarFileName = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('avatars', $avatarFileName, 'public');
+                } 
+                // Обрабатываем base64, если файл не загружен
+                else if ($request->filled('avatar_base64')) {
+                    try {
+                        $base64Image = $request->input('avatar_base64');
+                        
+                        // Удаляем префикс base64 если он есть
+                        if (strpos($base64Image, 'data:image') !== false) {
+                            list(, $base64Image) = explode(';', $base64Image);
+                            list(, $base64Image) = explode(',', $base64Image);
+                        }
+                        
+                        $decodedImage = base64_decode($base64Image);
+                        
+                        if ($decodedImage !== false) {
+                            $avatarFileName = time() . '_' . $user->id . '.jpg';
+                            $path = 'avatars/' . $avatarFileName;
+                            
+                            // Сохраняем файл
+                            Storage::disk('public')->put($path, $decodedImage);
+                        } else {
+                            throw new \Exception('Ошибка декодирования base64 изображения');
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Ошибка при обработке base64 аватара: ' . $e->getMessage(), [
+                            'user_id' => $user->id,
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                        
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Ошибка при обработке изображения: ' . $e->getMessage()
+                        ], 422);
+                    }
+                }
+                
+                if ($avatarFileName) {
+                    $user->avatar = $avatarFileName;
+                }
             }
+
+            // Обновление основных данных
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->phone = $request->phone;
+            $user->birth_date = $request->birth_date;
+            $user->gender = $request->gender;
             
-            // Сохраняем новый аватар
-            $avatar->storeAs('avatars', $filename, 'public');
-            $user->avatar = $filename;
             $user->save();
+
+            // Возвращаем успешный ответ с данными пользователя
+            return response()->json([
+                'success' => true,
+                'message' => 'Профиль успешно обновлен',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar ? asset('storage/avatars/' . $user->avatar) : asset('images/default-avatar.jpg'),
+                    'phone' => $user->phone,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender
+                ]
+            ]);
+        } catch (\Exception $e) {
+            // Логируем ошибку
+            \Log::error('Ошибка при обновлении профиля: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Возвращаем ошибку
+            return response()->json([
+                'success' => false,
+                'message' => 'Произошла ошибка при обновлении профиля: ' . $e->getMessage()
+            ], 500);
         }
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Профиль успешно обновлен',
-            'user' => $user
-        ]);
     }
-    
+
     /**
-     * Обработка загрузки аватара
+     * Обновление аватара пользователя (отдельный метод для AJAX)
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateAvatar(Request $request)
     {
+        $user = Auth::user();
+        
         $validator = Validator::make($request->all(), [
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Ошибка валидации файла'], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
         }
 
-        $user = Auth::user();
+        try {
+            if ($request->hasFile('avatar')) {
+                // Удаляем старый аватар если он существует
+                if ($user->avatar && Storage::disk('public')->exists('avatars/' . $user->avatar)) {
+                    Storage::disk('public')->delete('avatars/' . $user->avatar);
+                }
+                
+                $avatarFile = $request->file('avatar');
+                
+                // Создаем директорию если её нет
+                if (!Storage::disk('public')->exists('avatars')) {
+                    Storage::disk('public')->makeDirectory('avatars');
+                }
+                
+                // Сохраняем файл
+                $filename = time() . '_' . $user->id . '.' . $avatarFile->getClientOriginalExtension();
+                $path = $avatarFile->storeAs('avatars', $filename, 'public');
+                
+                $user->avatar = $filename;
+                $user->save();
 
-        // Удаляем старый аватар если он есть
-        if ($user->avatar) {
-            Storage::disk('public')->delete('avatars/' . $user->avatar);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Аватар успешно обновлен',
+                    'avatar_url' => asset('storage/avatars/' . $filename)
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Файл аватара не найден'
+            ], 422);
+            
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при обновлении аватара: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Произошла ошибка при обновлении аватара'
+            ], 500);
         }
-
-        // Генерируем уникальное имя файла
-        $fileName = time() . '.' . $request->avatar->extension();
-        
-        // Сохраняем файл в storage/app/public/avatars
-        $request->avatar->storeAs('avatars', $fileName, 'public');
-        
-        // Обновляем информацию в БД
-        $user->avatar = $fileName;
-        $user->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Аватар успешно обновлен',
-            'avatar_url' => asset('storage/avatars/' . $user->avatar)
-        ]);
     }
 }

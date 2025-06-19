@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\UserTemplate;
 use App\Models\AcquiredTemplate;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class PublicTemplateController extends Controller
 {
@@ -18,153 +17,78 @@ class PublicTemplateController extends Controller
      */
     public function show($id)
     {
-        // Находим только опубликованный шаблон
-        $userTemplate = UserTemplate::where('id', $id)
-                       ->where('status', 'published')
-                       ->firstOrFail();
+        // Загружаем шаблон с нужными связями
+        $userTemplate = UserTemplate::with(['template.category', 'user'])
+            ->where('id', $id)
+            ->where('is_active', 1) // Убедимся, что шаблон активен
+            ->first();
+
+        // Если шаблон не найден, возвращаем 404
+        if (!$userTemplate) {
+            // Добавляем логирование для отладки
+            \Log::error('Шаблон не найден или не активен', ['id' => $id]);
+            abort(404, 'Шаблон не найден');
+        }
+
+        // Проверяем, получил ли текущий пользователь этот шаблон
+        $acquiredTemplate = null;
+        if (Auth::check()) {
+            $acquiredTemplate = AcquiredTemplate::where('user_id', Auth::id())
+                ->where('user_template_id', $userTemplate->id)
+                ->first();
+        }
+
+        // Собираем данные о серии, если шаблон является серийным
+        $seriesData = null;
         
-        // Преобразуем custom_data в массив, если это не массив
-        if (!is_array($userTemplate->custom_data)) {
-            try {
-                $userTemplate->custom_data = json_decode(json_encode($userTemplate->custom_data), true);
-            } catch (\Exception $e) {
-                Log::error('Ошибка при обработке custom_data: ' . $e->getMessage());
-                $userTemplate->custom_data = [];
+        // Исправляем условие с правильными скобками
+        if (Auth::check() && ($userTemplate->custom_data && (is_array($userTemplate->custom_data) || is_object($userTemplate->custom_data)))) {
+            $customData = is_object($userTemplate->custom_data) ? 
+                (array)$userTemplate->custom_data : 
+                $userTemplate->custom_data;
+
+            // Проверяем, является ли шаблон серийным, либо по явному флагу, либо по количеству
+            $isSeries = (isset($customData['is_series']) && $customData['is_series']) || 
+                       (isset($customData['series_quantity']) && $customData['series_quantity'] > 1);
+                       
+            if ($isSeries) {
+                // Подсчитываем количество уже полученных шаблонов
+                $acquiredCount = AcquiredTemplate::where('user_template_id', $userTemplate->id)->count();
+                
+                // Подсчитываем количество использованных (отсканированных) шаблонов
+                $scanCount = AcquiredTemplate::where('user_template_id', $userTemplate->id)
+                    ->where('status', 'used')
+                    ->count();
+                
+                $seriesData = [
+                    'acquired_count' => $acquiredCount,
+                    'scan_count' => $scanCount,
+                    'series_quantity' => $customData['series_quantity'] ?? 1,
+                    'required_scans' => $customData['required_scans'] ?? 1,
+                    'is_series' => true
+                ];
+                
+                \Log::info('Template series data prepared', $seriesData);
             }
         }
         
-        // Получаем информацию о серии для передачи в представление
-        $acquiredCount = AcquiredTemplate::where('user_template_id', $userTemplate->id)->count();
-        
-        // Получаем общее количество сканирований шаблона
-        $scanCount = AcquiredTemplate::where('user_template_id', $userTemplate->id)
-                    ->where('status', 'used')
-                    ->count();
-        
-        // Извлекаем данные серии из custom_data
-        $customData = $userTemplate->custom_data ?? [];
-        $seriesQuantity = $customData['series_quantity'] ?? 1;
-        $requiredScans = $customData['required_scans'] ?? 1;
-        
-        // Добавляем данные для передачи в шаблон
-        $seriesData = [
-            'acquired_count' => $acquiredCount,
-            'scan_count' => $scanCount,
-            'series_quantity' => $seriesQuantity,
-            'required_scans' => $requiredScans
-        ];
-        
-        // Пре-обработка HTML для замены шаблонных выражений на фактические значения
-        $processedHtml = $this->processTemplateHtml($userTemplate->html_content, $userTemplate->custom_data, $seriesData);
-        $userTemplate->html_content = $processedHtml;
-            
-        return view('public.template', compact('userTemplate', 'seriesData'));
-    }
-    
-    /**
-     * Обработка HTML шаблона для замены шаблонных выражений на фактические значения
-     *
-     * @param string $html HTML содержимое
-     * @param array $customData Пользовательские данные
-     * @param array $seriesData Данные серии
-     * @return string Обработанный HTML
-     */
-    private function processTemplateHtml($html, $customData, $seriesData)
-    {
-        // Подготовка данных для подстановки
-        $seriesQuantity = $seriesData['series_quantity'] ?? '1';
-        $requiredScans = $seriesData['required_scans'] ?? '1';
-        $acquiredCount = $seriesData['acquired_count'] ?? '0';
-        $scanCount = $seriesData['scan_count'] ?? '0';
-        
-        // Функция для замены значений в input элементах
-        $replaceInputValue = function($matches) use ($seriesQuantity, $acquiredCount, $scanCount, $requiredScans) {
-            $fullMatch = $matches[0];
-            $editable = $matches[1] ?? '';
-            
-            $newValue = '';
-            switch ($editable) {
-                case 'series_quantity':
-                    $newValue = $seriesQuantity;
-                    break;
-                case 'series_received':
-                    $newValue = $acquiredCount;
-                    break;
-                case 'scan_count':
-                    $newValue = $scanCount;
-                    break;
-                case 'required_scans':
-                    $newValue = $requiredScans;
-                    break;
-                default:
-                    return $fullMatch;
-            }
-            
-            // Заменяем value в input элементе
-            $result = preg_replace('/value="[^"]*"/', 'value="' . $newValue . '"', $fullMatch);
-            // Также заменяем placeholder для согласованности
-            $result = preg_replace('/placeholder="[^"]*"/', 'placeholder="' . $newValue . '"', $result);
-            
-            return $result;
-        };
-        
-        // Заменяем значения в input элементах с data-editable атрибутами
-        $html = preg_replace_callback(
-            '/<input[^>]*data-editable="(series_quantity|series_received|scan_count|required_scans)"[^>]*>/',
-            $replaceInputValue,
-            $html
-        );
-        
-        // Дополнительная обработка для span и других элементов
-        $replaceTextValue = function($matches) use ($seriesQuantity, $acquiredCount, $scanCount, $requiredScans) {
-            $fullMatch = $matches[0];
-            $editable = $matches[1] ?? '';
-            
-            $newValue = '';
-            switch ($editable) {
-                case 'series_quantity':
-                    $newValue = $seriesQuantity;
-                    break;
-                case 'series_received':
-                    $newValue = $acquiredCount;
-                    break;
-                case 'scan_count':
-                    $newValue = $scanCount;
-                    break;
-                case 'required_scans':
-                    $newValue = $requiredScans;
-                    break;
-                default:
-                    return $fullMatch;
-            }
-            
-            // Заменяем содержимое между тегами
-            return preg_replace('/>[^<]*</', '>' . $newValue . '<', $fullMatch);
-        };
-        
-        // Заменяем значения в span и других элементах
-        $html = preg_replace_callback(
-            '/<(span|div|p)[^>]*data-editable="(series_quantity|series_received|scan_count|required_scans)"[^>]*>[^<]*<\/\1>/',
-            $replaceTextValue,
-            $html
-        );
-        
-        // Дополнительно заменяем любые оставшиеся шаблонные выражения
-        $replacements = [
-            '{{ isset($userTemplate) && isset($userTemplate->custom_data[\'series_quantity\']) ? $userTemplate->custom_data[\'series_quantity\'] : \'1\' }}' => $seriesQuantity,
-            '{{ isset($seriesData) ? $seriesData[\'acquired_count\'] : \'0\' }}' => $acquiredCount,
-            '{{ isset($seriesData) ? $seriesData[\'scan_count\'] : \'0\' }}' => $scanCount,
-            '{{ isset($userTemplate) && isset($userTemplate->custom_data[\'required_scans\']) ? $userTemplate->custom_data[\'required_scans\'] : \'1\' }}' => $requiredScans
-        ];
-        
-        $processedHtml = str_replace(array_keys($replacements), array_values($replacements), $html);
-        
-        Log::info('HTML processing completed', [
-            'original_length' => strlen($html),
-            'processed_length' => strlen($processedHtml),
+        // Добавляем логирование для диагностики
+        \Log::info('Template view data', [
+            'template_id' => $id,
+            'has_custom_data' => !empty($userTemplate->custom_data),
+            'custom_data_type' => gettype($userTemplate->custom_data),
             'series_data' => $seriesData
         ]);
-        
-        return $processedHtml;
+
+        // Добавляем диагностические данные
+        $debug = [
+            'template_id' => $id,
+            'template_found' => $userTemplate ? true : false,
+            'template_name' => $userTemplate ? $userTemplate->name : 'Не найдено',
+            'has_html_content' => $userTemplate && !empty($userTemplate->html_content) ? true : false,
+            'html_content_length' => $userTemplate ? mb_strlen($userTemplate->html_content) : 0
+        ];
+
+        return view('public.template', compact('userTemplate', 'acquiredTemplate', 'seriesData', 'debug'));
     }
 }

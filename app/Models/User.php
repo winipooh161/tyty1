@@ -28,6 +28,7 @@ class User extends Authenticatable
         'birth_date',
         'gender',
         'phone',
+        'status',
     ];
 
     /**
@@ -65,6 +66,14 @@ class User extends Authenticatable
     public function acquiredTemplates()
     {
         return $this->hasMany(AcquiredTemplate::class);
+    }
+    
+    /**
+     * Получить шаблоны, созданные пользователем
+     */
+    public function templates()
+    {
+        return $this->hasMany(UserTemplate::class);
     }
     
     /**

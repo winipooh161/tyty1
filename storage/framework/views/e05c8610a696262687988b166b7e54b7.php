@@ -1,4 +1,5 @@
 <style>
+    /* Основные стили редактора */
     .fullscreen-editor {
         position: fixed;
         top: 0;
@@ -10,11 +11,13 @@
         overflow: hidden;
     }
     
+    /* Контейнеры медиа */
     .max-height-full {
         max-height: 80vh;
         object-fit: contain;
     }
     
+    /* Стили для изображений */
     .image-container {
         position: relative;
         overflow: hidden;
@@ -35,15 +38,16 @@
     }
     
     #imagePreview {
-        touch-action: none; /* Предотвращаем стандартные действия браузера при касании */
+        touch-action: none;
         transform-origin: center;
         max-width: 100%;
         max-height: 100%;
     }
     
+    /* Стили для видео-контейнера */
     .video-container {
         background-color: #000;
-        height: 90vh; /* Уменьшаем высоту на мобильных устройствах */
+        height: 80vh;
         position: relative;
         overflow: hidden;
         display: flex;
@@ -52,24 +56,26 @@
     }
     
     #videoPreview {
-        max-height: 100%;
+        max-height: 80%;
         max-width: 100%;
         object-fit: contain;
     }
-    
-    /* Полностью обновленные стили для видео-таймлайна */
-.video-timeline-container {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 15px;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(5px);
-    z-index: 5;
-}
 
-/* Обертка для миниатюр видео */
+    /* Стиль для таймлайна видео */
+    .video-timeline-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 16px 12px;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 5;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+    
+    /* Обертка для миниатюр видео */
 .video-thumbnails-wrapper {
     position: relative;
     height: 50px;
@@ -219,8 +225,8 @@
  
     /* Фиксы для портретного режима */
     @media (orientation: portrait) and (max-width: 576px) {
-        .video-container {
-            height: 90vh; /* Меньше в портретном режиме */
+        .video-container, .image-container {
+            height: 100vh; /* Меньше в портретном режиме */
         }
     }
     
@@ -235,6 +241,10 @@
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         z-index: 20;
         border-top: 1px solid #eaeaea;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
     }
     
     @media (max-width: 576px) {
@@ -247,7 +257,7 @@
     /* Улучшенные мобильно-адаптивные стили для видео-редактора */
     .video-container {
         background-color: #000;
-        height: 90vh; /* Уменьшаем высоту на мобильных устройствах */
+        height: 7100vh0vh; /* Уменьшаем высоту на мобильных устройствах */
         position: relative;
         overflow: hidden;
         display: flex;
@@ -460,34 +470,19 @@
     
     /* Адаптивная высота плеера для маленьких экранов */
     @media (max-height: 700px) {
-        .video-container {
-            height: 90vh;
+        .video-container, .image-container {
+            height: 60vh;
         }
     }
     
     @media (max-height: 600px) {
-        .video-container {
-            height: 90vh;
+        .video-container, .image-container {
+            height: 55vh;
         }
     }
     
     /* Адаптивные медиа-запросы для разных размеров экранов */
     @media (max-width: 576px) {
-        .mobile-time-counter {
-            font-size: 0.9rem;
-            padding: 6px 8px;
-            min-width: 46px;
-        }
-        
-        .mobile-duration-badge {
-            font-size: 0.9rem;
-            padding: 5px 10px;
-        }
-        
-        .mobile-trim-slider {
-            height: 46px;
-        }
-        
         .mobile-handle {
             width: 36px;
             height: 36px;
@@ -497,43 +492,15 @@
             height: 18px;
         }
         
-        .handle-grip::before,
-        .handle-grip::after {
-            height: 12px;
-            left: -6px;
-        }
-        
-        .handle-grip::after {
-            right: -6px;
-            left: auto;
-        }
-        
-        .btn-preview, #resetTrimmingBtn {
-            padding: 8px 16px;
-            font-size: 0.95rem;
-            min-width: 110px;
+        .action-buttons .btn {
+            padding: 12px;
+            font-size: 1rem;
         }
     }
     
-    /* Стили для еще более маленьких экранов */
     @media (max-width: 400px) {
         .video-timeline-container {
             padding: 12px 8px;
-        }
-        
-        .mobile-time-display {
-            margin-bottom: 6px;
-        }
-        
-        .mobile-time-counter {
-            font-size: 0.8rem;
-            padding: 4px 6px;
-            min-width: 40px;
-        }
-        
-        .mobile-duration-badge {
-            font-size: 0.8rem;
-            padding: 4px 8px;
         }
         
         .mobile-trim-slider {
@@ -550,59 +517,12 @@
             height: 16px;
             width: 3px;
         }
-        
-        .handle-grip::before,
-        .handle-grip::after {
-            width: 3px;
-            height: 10px;
-            left: -5px;
-        }
-        
-        .handle-grip::after {
-            right: -5px;
-            left: auto;
-        }
-        
-        .btn-preview, #resetTrimmingBtn {
-            padding: 6px 14px;
-            font-size: 0.9rem;
-            min-width: 100px;
-        }
-        
-        .btn-preview i, #resetTrimmingBtn i {
-            font-size: 1.1rem;
-        }
-        
-        .mobile-controls {
-            padding: 8px 0;
-        }
     }
     
-    /* Фиксы для портретного режима */
     @media (orientation: portrait) and (max-width: 576px) {
-        .video-container {
-            height: 90vh; /* Меньше в портретном режиме */
-        }
-    }
-    
-    /* Улучшенные стили для кнопок действий внизу экрана */
-    .action-buttons {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 16px;
-        background: white;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        z-index: 20;
-        border-top: 1px solid #eaeaea;
-    }
-    
-    @media (max-width: 576px) {
-        .action-buttons .btn {
-            padding: 12px;
-            font-size: 1rem;
+        .video-container, .image-container {
+            height: 70vh;
         }
     }
 </style>
-<?php /**PATH C:\OSPanel\domains\tyty\resources\views/media/media-editor/styles.blade.php ENDPATH**/ ?>
+    <?php /**PATH C:\OSPanel\domains\tyty\resources\views/media/media-editor/styles.blade.php ENDPATH**/ ?>

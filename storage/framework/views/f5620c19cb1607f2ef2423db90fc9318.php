@@ -1,60 +1,67 @@
 
 
 <?php $__env->startSection('content'); ?>
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2>Категории шаблонов</h2>
-            <p class="text-muted">Выберите категорию для просмотра доступных шаблонов</p>
-        </div>
-    </div>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <h3 class="mb-3">Категории шаблонов</h3>
+            
+            <div class="row g-3">
+                <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="<?php echo e(route('client.templates.index', $category->slug)); ?>" class="text-decoration-none">
+                        <div class="card h-100 category-card">
+                            <div class="card-body text-center">
+                                <?php if($category->icon): ?>
+                                    <i class="bi bi-<?php echo e($category->icon); ?> category-icon"></i>
+                                <?php else: ?>
+                                    <i class="bi bi-grid category-icon"></i>
+                                <?php endif; ?>
+                                <h5 class="card-title"><?php echo e($category->name); ?></h5>
+                                <p class="card-text small text-muted">
+                                    <?php echo e($category->template_count); ?> <?php echo e($category->template_count == 1 ? 'шаблон' : 
+                                      ($category->template_count >= 2 && $category->template_count <= 4 ? 'шаблона' : 'шаблонов')); ?>
 
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <div class="col">
-            <div class="card h-100 ">
-                <?php if($category->image): ?>
-                <img src="<?php echo e(asset('storage/category_images/'.$category->image)); ?>" class="card-img-top category-img d-none d-lg-block" alt="<?php echo e($category->name); ?>">
-                <?php else: ?>
-                <div class="card-img-top category-img-placeholder d-flex align-items-center justify-content-center bg-light d-none d-lg-flex">
-                    <i class="bi bi-card-image text-muted" style="font-size: 3rem;"></i>
+                                </p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
-                <?php endif; ?>
-                <div class="card-body">
-                    <h5 class="card-title"><?php echo e($category->name); ?></h5>
-                    <p class="card-text"><?php echo e($category->description); ?></p>
-                    
-                    <?php if(Auth::user()->isVip()): ?>
-                        <!-- VIP пользователи видят все шаблоны -->
-                        <a href="<?php echo e(route('client.templates.index', $category->slug)); ?>" class="btn btn-primary">
-                            <i class="bi bi-grid me-1"></i> Выбрать шаблон
-                        </a>
-                        <span class="badge bg-warning text-dark ms-2">VIP</span>
-                    <?php else: ?>
-                        <!-- Обычные пользователи направляются сразу на стандартный шаблон, если он есть -->
-                        <?php
-                            $defaultTemplate = \App\Models\Template::where('template_category_id', $category->id)
-                                ->where('is_default', true)
-                                ->where('is_active', true)
-                                ->first();
-                        ?>
-                        
-                        <?php if($defaultTemplate): ?>
-                            <a href="<?php echo e(route('client.templates.create-new', $defaultTemplate->id)); ?>" class="btn btn-primary">
-                                <i class="bi bi-pencil-square me-1"></i> Создать
-                            </a>
-                        <?php else: ?>
-                            <a href="<?php echo e(route('client.templates.index', $category->slug)); ?>" class="btn btn-secondary disabled">
-                                Шаблон недоступен
-                            </a>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
 </div>
+
+<style>
+    .category-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-radius: 10px;
+    }
+    
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .category-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        display: block;
+        color: #6c757d;
+    }
+    
+    @media (max-width: 576px) {
+        .col-6 {
+            padding: 0 8px;
+        }
+        
+        .row {
+            margin-left: -8px;
+            margin-right: -8px;
+        }
+    }
+</style>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\OSPanel\domains\tyty\resources\views/templates/categories.blade.php ENDPATH**/ ?>

@@ -1,4 +1,4 @@
-<!-- filepath: c:\ospanel\domains\tyty\resources\views\layouts\partials\modal\modal-qr.blade.php -->
+<!-- filepath: c:\ospanel\domains\tyty\resources\views\layouts\partials\modal\qrScannerModal.blade.php -->
 <!-- Модальная система для мобильной навигации -->
 <div class="modal-panel-container">
     <!-- QR сканер модальное окно -->

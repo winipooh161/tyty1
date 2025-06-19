@@ -20,28 +20,96 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Vite Assets -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/css/style.css', 'resources/js/app.js'])
 
     <!-- Дополнительные стили для страниц аутентификации -->
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #f8f8fa;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
+        
         .auth-container {
             flex-grow: 1;
             display: flex;
             align-items: center;
         }
-        .auth-card {
+        
+        .card {
+            border: none;
+            box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.05);
             border-radius: 1rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-        .auth-header {
-            border-radius: 1rem 1rem 0 0;
-            padding: 1.5rem;
+        
+        .card-header {
+            border-radius: 1rem 1rem 0 0 !important;
+            border-bottom: 0;
+        }
+        
+        .btn-primary {
+            background-color: #6c8aec;
+            border-color: #6c8aec;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: #5b79db;
+            border-color: #5b79db;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(108, 138, 236, 0.2);
+        }
+        
+        .form-control:focus {
+            border-color: #6c8aec;
+            box-shadow: 0 0 0 0.25rem rgba(108, 138, 236, 0.15);
+        }
+        
+        .form-check-input:checked {
+            background-color: #6c8aec;
+            border-color: #6c8aec;
+        }
+        
+        .bg-primary {
+            background-color: #6c8aec !important;
+        }
+        
+        .text-primary {
+            color: #6c8aec !important;
+        }
+        
+        /* Стилизация маски телефона */
+        .maskphone {
+            letter-spacing: 1px;
+            font-family: monospace;
+        }
+
+        /* Дополнительные стили для адаптивности */
+        @media (max-width: 767px) {
+            .card {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            .card-header {
+                border-radius: 0 !important;
+            }
+            
+            .container {
+                padding-left: 0;
+                padding-right: 0;
+            }
+            
+            .row {
+                margin-left: 0;
+                margin-right: 0;
+            }
+            
+            .col-md-8, .col-lg-6 {
+                padding-left: 0;
+                padding-right: 0;
+            }
         }
     </style>
     
@@ -49,29 +117,13 @@
 </head>
 <body>
     <div id="app">
-        <header class="shadow-sm bg-white py-2">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <a class="navbar-brand" href="{{ url('/') }}">
-                            <img src="{{ asset('images/logo.svg') }}" alt="{{ config('app.name') }}" height="40">
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </header>
+       
         
-        <main class="auth-container py-4">
+        <main class="py-4">
             @yield('content')
         </main>
         
-        <footer class="bg-white py-3 border-top">
-            <div class="container">
-                <div class="text-center text-muted">
-                    © {{ date('Y') }} {{ config('app.name') }}
-                </div>
-            </div>
-        </footer>
+      
     </div>
     
     <!-- Axios для AJAX-запросов -->

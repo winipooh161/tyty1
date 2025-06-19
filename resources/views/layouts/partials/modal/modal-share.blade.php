@@ -3,18 +3,13 @@
     <div class="modal-backdrop"></div>
     <div class="modal-panel-dialog">
         <div class="modal-panel-content">
-            <div class="modal-panel-header">
-                <h5 class="modal-panel-title">Поделиться профилем</h5>
-                <button type="button" class="modal-panel-close" onclick="closeModalPanel('share-profile-modal')">
-                    <i class="bi bi-x"></i>
-                </button>
-            </div>
+            
            
-            <div class="modal-panel-body">
+            <div class="modal-panel-body modal-panel-body-sub">
                
                 
                 <!-- QR код для профиля -->
-                <div class="share-qr-container text-center mb-4">
+                <div class="share-qr-container text-center  ">
                     <div id="profile-qr-code" class="qr-code-container mx-auto">
                         <!-- QR код будет сгенерирован здесь -->
                         <div class="spinner-border text-primary" role="status">
@@ -23,7 +18,7 @@
                     </div>
                   
                     <button class="btn btn-sm btn-outline-secondary mt-2" id="download-qr-code">
-                        <i class="bi bi-download"></i> Скачать QR-код
+                        <i class="bi bi-download"></i>  QR-код
                     </button>
                 </div>
                 
@@ -43,20 +38,20 @@
                             <i class="bi bi-vk"></i> ВКонтакте
                         </a>
                         <a href="#" class="btn btn-outline-info share-telegram" onclick="shareProfile('telegram')">
-                            <i class="bi bi-telegram"></i> Telegram
+                            <i class="bi bi-telegram"></i> 
                         </a>
                         <a href="#" class="btn btn-outline-primary share-whatsapp" onclick="shareProfile('whatsapp')">
-                            <i class="bi bi-whatsapp"></i> WhatsApp
+                            <i class="bi bi-whatsapp"></i>
                         </a>
                         <a href="#" class="btn btn-outline-danger share-mail" onclick="shareProfile('email')">
-                            <i class="bi bi-envelope"></i> Email
+                            <i class="bi bi-envelope"></i>
                         </a>
                     </div>
                     
                     <!-- Нативный шаринг для мобильных устройств -->
                     <div id="native-share-container" class="my-3" style="display: none;">
                         <button class="btn btn-primary w-100" id="native-share-btn">
-                            <i class="bi bi-share"></i> Поделиться через приложение
+                            <i class="bi bi-share"></i> Поделиться
                         </button>
                     </div>
                 </div>

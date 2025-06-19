@@ -10,7 +10,7 @@ class UserTemplate extends Model
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.
+     * Атрибуты, которые можно массово назначать
      *
      * @var array
      */
@@ -21,23 +21,54 @@ class UserTemplate extends Model
         'name',
         'html_content',
         'custom_data',
-        'status',
-        'cover_path',   // Путь к файлу обложки
-        'cover_type',   // Тип обложки: 'image' или 'video'
-        'target_user_id', // ID пользователя VIP, для которого создан шаблон
+        'cover_path',
+        'cover_type',
+        'is_active',
+        'is_published',
+        'target_user_id'
     ];
 
     /**
-     * The attributes that should be cast.
+     * Атрибуты, которые должны быть приведены к другим типам
      *
      * @var array
      */
     protected $casts = [
         'custom_data' => 'array',
+        'is_active' => 'boolean',
+        'is_published' => 'boolean',
     ];
 
     /**
-     * Получить пользователя, которому принадлежит этот шаблон.
+     * Получить путь к обложке с корректной обработкой пути
+     * @return string|null
+     */
+    public function getCoverPathAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+        
+        // Если путь уже начинается с 'storage/', оставляем как есть
+        if (strpos($value, 'storage/') === 0) {
+            return $value;
+        }
+        
+        // Если путь начинается с '/', удаляем его
+        if (strpos($value, '/') === 0) {
+            $value = substr($value, 1);
+        }
+        
+        // Добавляем префикс 'storage/' если его нет
+        if (strpos($value, 'storage/') !== 0 && strpos($value, 'template_covers/') === 0) {
+            return 'storage/' . $value;
+        }
+        
+        return $value;
+    }
+
+    /**
+     * Получить пользователя, которому принадлежит шаблон.
      */
     public function user()
     {
@@ -45,13 +76,13 @@ class UserTemplate extends Model
     }
 
     /**
-     * Получить оригинальный шаблон, на котором основан этот пользовательский шаблон.
+     * Получить базовый шаблон, на основе которого создан пользовательский.
      */
     public function template()
     {
         return $this->belongsTo(Template::class);
     }
-    
+
     /**
      * Получить папку, в которой находится шаблон.
      */
@@ -61,10 +92,18 @@ class UserTemplate extends Model
     }
     
     /**
-     * Получить VIP-пользователя, для которого создан шаблон.
+     * Получить целевого пользователя, если шаблон создан для VIP.
      */
     public function targetUser()
     {
         return $this->belongsTo(User::class, 'target_user_id');
+    }
+    
+    /**
+     * Проверяет, принадлежит ли шаблон указанному пользователю
+     */
+    public function belongsToUser($userId)
+    {
+        return $this->user_id == $userId;
     }
 }

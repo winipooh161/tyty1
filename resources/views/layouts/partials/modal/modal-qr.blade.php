@@ -1,703 +1,40 @@
+<!-- filepath: c:\ospanel\domains\tyty\resources\views\layouts\partials\modal\modal-qr.blade.php -->
 <!-- QR сканер модальное окно -->
-<div class="modal-panel" id="qr-scanner-modal" tabindex="-1" aria-hidden="true">
+<div class="modal-panel fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true" data-static="true">
+    <div class="modal-backdrop" id="qrScannerBackdrop"></div>
     <div class="modal-panel-dialog modal-fullscreen">
         <div class="modal-panel-content">
-            <div class="modal-panel-body p-0">
+            <div class="modal-panel-body p-0 position-relative">
                 <div class="camera-container">
-                    <video id="qrScannerVideo" playsinline></video>
-                    <div class="scanner-overlay">
-                        <div class="scanner-frame"></div>
-                    </div>
-                    <div class="scanning-status p-3 text-center">
-                        <div id="scannerStatus" class="mb-2">Подготовка камеры...</div>
-                        <div id="scannerResult" class="mt-2 fw-bold"></div>
+                    <video id="qrScannerVideo" playsinline muted></video>
+                    <div class="scanner-overlay d-flex flex-column align-items-center justify-content-center">
+                        <div class="scanner-frame">
+                            <!-- Анимированные уголки для рамки сканирования -->
+                            <div class="scanner-corner top-left"></div>
+                            <div class="scanner-corner top-right"></div>
+                            <div class="scanner-corner bottom-left"></div>
+                            <div class="scanner-corner bottom-right"></div>
+                        </div>
                     </div>
                 </div>
                 
+                <!-- Скрытые индикаторы для работы JavaScript -->
+                <div id="qrScannerLoading" class="scanner-loading align-items-center justify-content-center" style="display: none;"></div>
+                <div id="qrScannerError" class="scanner-error align-items-center justify-content-center" style="display: none;">
+                    <p id="qrScannerErrorMessage" class="d-none"></p>
+                    <button id="qrScannerRetryBtn" class="d-none"></button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Встроенная минимальная версия QR-сканера для обеспечения его доступности -->
-<script>
-// Встроенная мини-версия QR сканера для случая, если внешний скрипт не загрузится
-if (typeof QrScanner === 'undefined') {
-    class MinimalQrScanner {
-        constructor(videoElem, onResult, options = {}) {
-            this.videoElem = videoElem;
-            this.onResult = onResult;
-            this.options = options;
-            this.active = false;
-        }
-        
-        static hasCamera() {
-            return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-        }
-        
-        static async listCameras() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) 
-                return [];
-            
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                return devices.filter(d => d.kind === 'videoinput');
-            } catch (e) {
-                console.error('Ошибка при получении списка камер:', e);
-                return [];
-            }
-        }
-        
-        async start() {
-            if (this.active) return;
-            
-            try {
-                this.stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
-                this.videoElem.srcObject = this.stream;
-                this.videoElem.play();
-                this.active = true;
-                
-                // Для демонстрации - в реальной версии здесь был бы код сканирования
-                console.log('MinimalQrScanner: Camera started');
-            } catch (e) {
-                console.error('MinimalQrScanner: Ошибка запуска камеры', e);
-                throw e;
-            }
-        }
-        
-        stop() {
-            if (!this.active) return;
-            
-            if (this.stream) {
-                this.stream.getTracks().forEach(track => track.stop());
-                this.stream = null;
-            }
-            this.videoElem.srcObject = null;
-            this.active = false;
-        }
-        
-        destroy() {
-            this.stop();
-        }
-    }
-    
-    window.QrScanner = MinimalQrScanner;
-    console.warn('Используется минимальная версия QR сканера. Для полной функциональности загрузите библиотеку.');
-}
-
-// Флаг для предотвращения одновременной инициализации нескольких экземпляров
-let qrScannerInitializing = false;
-
-// Модуль инициализации QR сканера
-function initQrScannerModule(modalSystem) {
-    // Предотвращаем одновременное выполнение нескольких инициализаций
-    if (qrScannerInitializing) {
-        console.warn('Инициализация QR-сканера уже выполняется, пропускаем повторный запрос');
-        return;
-    }
-    
-    // Проверяем, инициализирован ли уже сканер
-    if (modalSystem.scannerInitialized && modalSystem.qrScanner) {
-        console.log('QR сканер уже инициализирован, пропускаем повторную инициализацию');
-        
-        // Просто запускаем сканер, если он уже инициализирован, но остановлен
-        if (modalSystem.qrScanner && typeof modalSystem.qrScanner.start === 'function') {
-            try {
-                const statusElement = document.getElementById('scannerStatus');
-                if (statusElement) statusElement.textContent = 'Запуск камеры...';
-                
-                // Добавляем небольшую задержку перед запуском
-                setTimeout(async () => {
-                    try {
-                        await modalSystem.qrScanner.start();
-                        if (statusElement) statusElement.textContent = 'Наведите камеру на QR-код';
-                        console.log('QR сканер перезапущен');
-                    } catch (e) {
-                        console.error('Ошибка при перезапуске QR сканера:', e);
-                        handleScannerError(e, 
-                            document.getElementById('scannerStatus'),
-                            document.getElementById('scannerResult'), 
-                            modalSystem
-                        );
-                    }
-                }, 300);
-            } catch (e) {
-                console.error('Ошибка при попытке перезапуска QR сканера:', e);
-            }
-        }
-        return;
-    }
-    
-    // Устанавливаем флаг инициализации
-    qrScannerInitializing = true;
-    
-    (async function() {
-        try {
-            const statusElement = document.getElementById('scannerStatus');
-            const resultElement = document.getElementById('scannerResult');
-            
-            // Проверка на наличие элемента видео
-            const video = document.getElementById('qrScannerVideo');
-            if (!video) {
-                qrScannerInitializing = false;
-                throw new Error('Элемент видео не найден');
-            }
-            
-            // Если видео уже имеет srcObject, удаляем его перед новой инициализацией
-            if (video.srcObject) {
-                try {
-                    const tracks = video.srcObject.getTracks();
-                    tracks.forEach(track => track.stop());
-                    video.srcObject = null;
-                    console.log('Существующий видеопоток очищен');
-                } catch (e) {
-                    console.warn('Не удалось очистить предыдущий видеопоток:', e);
-                }
-            }
-            
-            // Очищаем предыдущие сообщения
-            if (statusElement) statusElement.textContent = 'Запрос доступа к камере...';
-            if (resultElement) resultElement.textContent = '';
-            
-            // Логирование для отладки
-            console.log('Инициализация QR сканера...');
-            
-            // Проверка наличия QrScanner и, если нужно, его загрузка
-            if (typeof QrScanner === 'undefined' || QrScanner.constructor.name === 'MinimalQrScanner') {
-                if (statusElement) statusElement.textContent = 'Загрузка библиотеки QR-сканера...';
-                console.log('Загрузка библиотеки QR-сканера...');
-                try {
-                    await loadQrScannerLibrary();
-                    if (statusElement) statusElement.textContent = 'Библиотека загружена, получаем доступ к камере...';
-                    console.log('Библиотека QR-сканера загружена успешно');
-                } catch(e) {
-                    console.error('Ошибка загрузки библиотеки:', e);
-                    if (statusElement) statusElement.textContent = 'Ошибка загрузки библиотеки сканера';
-                    qrScannerInitializing = false;
-                    throw new Error('Не удалось загрузить библиотеку QR-сканера');
-                }
-            }
-            
-            // Настройка пути к worker-скрипту (если еще не установлен)
-            if (QrScanner.WORKER_PATH === undefined) {
-                console.log('Настройка пути к worker-скрипту');
-                QrScanner.WORKER_PATH = '/js/qr-scanner-worker.min.js';
-            }
-            
-            // Проверка доступности камеры
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                qrScannerInitializing = false;
-                throw new Error('Ваше устройство не поддерживает доступ к камере');
-            }
-            
-            // Остановка предыдущего сканера, если он существует
-            if (modalSystem.qrScanner) {
-                try {
-                    console.log('Останавливаем предыдущий экземпляр QR-сканера...');
-                    modalSystem.qrScanner.stop();
-                    modalSystem.qrScanner.destroy();
-                    modalSystem.qrScanner = null;
-                    modalSystem.scannerInitialized = false;
-                    
-                    // Добавим паузу для гарантированного освобождения ресурсов
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                } catch (e) {
-                    console.warn('Ошибка при остановке предыдущего QR-сканера:', e);
-                    // Продолжаем выполнение, несмотря на ошибку
-                }
-            }
-            
-            // Запрашиваем разрешение на использование камеры заранее
-            let mediaStream = null;
-            try {
-                console.log('Запрашиваем разрешение на использование камеры...');
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' }
-                });
-                console.log('Разрешение на использование камеры получено');
-                
-                // Если успешно получили поток, освобождаем его для QrScanner
-                mediaStream.getTracks().forEach(track => track.stop());
-            } catch (permissionError) {
-                console.error('Ошибка при запросе разрешения на камеру:', permissionError);
-                // Продолжаем, QrScanner сам запросит разрешение
-            }
-
-            // Создаем экземпляр QR-сканера с обработкой ошибок
-            console.log('Создание экземпляра QR-сканера...');
-            
-            // Параметры для QR-сканера (добавляем улучшенные параметры)
-            const qrScannerOptions = {
-                // Улучшаем чтение QR-кодов с экрана
-                highlightScanRegion: true,
-                highlightCodeOutline: true,
-                maxScansPerSecond: 10, // Увеличиваем частоту сканирования
-                preferredCamera: 'environment', // Предпочтительно задняя камера
-                calculateScanRegion: (video) => {
-                    // Расширяем область сканирования до 80% экрана
-                    const videoWidth = video.videoWidth;
-                    const videoHeight = video.videoHeight;
-                    const width = Math.min(videoWidth, videoHeight) * 0.8;
-                    const height = width;
-                    const x = (videoWidth - width) / 2;
-                    const y = (videoHeight - height) / 2;
-                    return { x, y, width, height };
-                }
-            };
-            
-            // Создаем сканер с улучшенной обработкой ошибок
-            try {
-                modalSystem.qrScanner = new QrScanner(
-                    video,
-                    result => {
-                        // Обработка успешного сканирования
-                        console.log('QR-код успешно отсканирован:', result.data);
-                        if (statusElement) statusElement.textContent = 'QR-код найден!';
-                        if (resultElement) resultElement.textContent = 'Обработка результата...';
-                        
-                        // Вибрация при успешном сканировании
-                        if (navigator.vibrate && window.userHasInteractedWithPage) {
-                            navigator.vibrate([100, 50, 100]);
-                        }
-                        
-                        // Останавливаем сканирование
-                        if (modalSystem.qrScanner) {
-                            modalSystem.qrScanner.stop();
-                        }
-                        
-                        // Проверяем, является ли результат ссылкой
-                        if (result.data.startsWith('http')) {
-                            console.log('Результат сканирования - ссылка:', result.data);
-                            
-                            // Показываем результат сканирования
-                            if (resultElement) {
-                                resultElement.innerHTML = `
-                                    <div class="alert alert-success">
-                                        <strong>Обнаружена ссылка:</strong><br>
-                                        <small class="text-truncate d-block">${result.data}</small>
-                                    </div>
-                                    <div class="d-flex justify-content-between gap-2 mt-3">
-                                        <button class="btn btn-sm btn-secondary" id="retryScanButton">
-                                            <i class="bi bi-arrow-repeat me-1"></i>Сканировать снова
-                                        </button>
-                                        <a href="${result.data}" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-box-arrow-up-right me-1"></i>Перейти
-                                        </a>
-                                    </div>
-                                `;
-                            }
-                            
-                            // Обработчик для повторного сканирования
-                            document.getElementById('retryScanButton')?.addEventListener('click', () => {
-                                if (resultElement) resultElement.innerHTML = '';
-                                if (statusElement) statusElement.textContent = 'Наведите камеру на QR-код';
-                                if (modalSystem.qrScanner) modalSystem.qrScanner.start();
-                            });
-                        } else {
-                            // Если не ссылка, просто показываем результат
-                            if (resultElement) {
-                                resultElement.innerHTML = `
-                                    <div class="alert alert-info">
-                                        <strong>Обнаружен текст:</strong><br>
-                                        ${result.data}
-                                    </div>
-                                    <button class="btn btn-sm btn-primary mt-2" id="retryScanButton">
-                                        <i class="bi bi-arrow-repeat me-1"></i>Сканировать снова
-                                    </button>
-                                `;
-                            }
-                            
-                            // Обработчик для повторного сканирования
-                            document.getElementById('retryScanButton')?.addEventListener('click', () => {
-                                if (resultElement) resultElement.innerHTML = '';
-                                if (statusElement) statusElement.textContent = 'Наведите камеру на QR-код';
-                                if (modalSystem.qrScanner) modalSystem.qrScanner.start();
-                            });
-                        }
-                    },
-                    error => {
-                        // Обработка ошибок сканирования (не останавливаем сканирование при ошибке)
-                        console.error('QR сканер: ошибка сканирования', error);
-                    },
-                    qrScannerOptions
-                );
-            } catch (initError) {
-                qrScannerInitializing = false;
-                console.error('Ошибка инициализации QR-сканера:', initError);
-                throw initError;
-            }
-            
-            try {
-                // Безопасно проверяем наличие камер, обрабатывая возможные ошибки
-                let cameras = [];
-                try {
-                    console.log('Получение списка камер...');
-                    cameras = await QrScanner.listCameras(true);
-                    console.log('Доступные камеры:', cameras);
-                    
-                    // Настраиваем переключение камер, если их больше одной
-                    const switchCameraBtn = document.getElementById('switchCameraBtn');
-                    if (switchCameraBtn && cameras.length > 1) {
-                        let currentCameraIndex = 0;
-                        
-                        switchCameraBtn.addEventListener('click', async () => {
-                            if (!modalSystem.qrScanner) return;
-                            
-                            try {
-                                // Останавливаем текущую камеру
-                                modalSystem.qrScanner.stop();
-                                
-                                // Меняем индекс камеры
-                                currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-                                
-                                // Небольшая задержка для корректного переключения
-                                await new Promise(resolve => setTimeout(resolve, 300));
-                                
-                                // Устанавливаем новую камеру
-                                await modalSystem.qrScanner.setCamera(cameras[currentCameraIndex].id);
-                                
-                                if (statusElement) {
-                                    statusElement.textContent = `Переключено на камеру: ${cameras[currentCameraIndex].label || 'Камера ' + (currentCameraIndex + 1)}`;
-                                }
-                            } catch (e) {
-                                console.error('Ошибка при переключении камеры:', e);
-                                
-                                // В случае ошибки пробуем перезапустить сканер
-                                try {
-                                    await modalSystem.qrScanner.start();
-                                } catch (restartError) {
-                                    console.error('Ошибка при перезапуске сканера:', restartError);
-                                }
-                            }
-                        });
-                        
-                        switchCameraBtn.style.display = 'block';
-                    } else if (switchCameraBtn) {
-                        switchCameraBtn.style.display = 'none';
-                    }
-                    
-                    // Настраиваем кнопку вспышки, если она доступна
-                    const toggleFlashlightBtn = document.getElementById('toggleFlashlightBtn');
-                    if (toggleFlashlightBtn) {
-                        // Проверяем доступность функции для управления вспышкой
-                        let flashSupported = false;
-                        
-                        // Первоначально скрываем кнопку
-                        toggleFlashlightBtn.style.display = 'none';
-                        
-                        try {
-                            // Проверяем, поддерживается ли функция toggleFlash и hasFlash
-                            if (modalSystem.qrScanner && 
-                                typeof modalSystem.qrScanner.hasFlash === 'function' &&
-                                typeof modalSystem.qrScanner.toggleFlash === 'function') {
-                                
-                                // Проверяем доступность вспышки на устройстве
-                                modalSystem.qrScanner.hasFlash()
-                                    .then(hasFlash => {
-                                        flashSupported = hasFlash;
-                                        
-                                        // Показываем кнопку только если вспышка поддерживается
-                                        toggleFlashlightBtn.style.display = flashSupported ? 'block' : 'none';
-                                        
-                                        if (flashSupported) {
-                                            console.log('Вспышка поддерживается на этом устройстве');
-                                        } else {
-                                            console.log('Вспышка не поддерживается на этом устройстве');
-                                        }
-                                    })
-                                    .catch(err => {
-                                        console.warn('Ошибка при проверке поддержки вспышки:', err);
-                                        toggleFlashlightBtn.style.display = 'none';
-                                    });
-                            } else {
-                                console.log('Метод toggleFlash или hasFlash не найден в QR сканере');
-                                toggleFlashlightBtn.style.display = 'none';
-                            }
-                        } catch (e) {
-                            console.warn('Ошибка при настройке кнопки вспышки:', e);
-                            toggleFlashlightBtn.style.display = 'none';
-                        }
-                        
-                        // Обработчик нажатия на кнопку управления вспышкой
-                        toggleFlashlightBtn.addEventListener('click', async () => {
-                            if (!modalSystem.qrScanner) return;
-                            
-                            try {
-                                if (typeof modalSystem.qrScanner.toggleFlash === 'function') {
-                                    await modalSystem.qrScanner.toggleFlash();
-                                    toggleFlashlightBtn.classList.toggle('active');
-                                    console.log('Вспышка переключена');
-                                } else {
-                                    console.warn('Функция toggleFlash не найдена в QR сканере');
-                                    if (statusElement) statusElement.textContent = 'Вспышка недоступна';
-                                    setTimeout(() => {
-                                        if (statusElement) statusElement.textContent = 'Наведите камеру на QR-код';
-                                    }, 2000);
-                                }
-                            } catch (flashError) {
-                                console.error('Ошибка управления вспышкой:', flashError);
-                                if (statusElement) {
-                                    statusElement.textContent = 'Вспышка недоступна';
-                                    setTimeout(() => {
-                                        statusElement.textContent = 'Наведите камеру на QR-код';
-                                    }, 2000);
-                                }
-                            }
-                        });
-                    }
-                    
-                } catch (e) {
-                    console.warn('Ошибка при получении списка камер:', e);
-                }
-                
-                if (statusElement) statusElement.textContent = 'Запуск камеры...';
-                console.log('Запуск камеры...');
-                
-                // Увеличиваем задержку перед запуском, чтобы компоненты успели инициализироваться
-                setTimeout(async () => {
-                    try {
-                        if (modalSystem.qrScanner) {
-                            await modalSystem.qrScanner.start();
-                            if (statusElement) statusElement.textContent = 'Наведите камеру на QR-код';
-                            console.log('QR сканер успешно запущен');
-                            
-                            // Проверяем поддержку вспышки после запуска камеры
-                            try {
-                                if (typeof modalSystem.qrScanner.hasFlash === 'function') {
-                                    const hasFlash = await modalSystem.qrScanner.hasFlash();
-                                    const toggleFlashlightBtn = document.getElementById('toggleFlashlightBtn');
-                                    if (toggleFlashlightBtn) {
-                                        toggleFlashlightBtn.style.display = hasFlash ? 'block' : 'none';
-                                        console.log('Статус поддержки вспышки после запуска:', hasFlash);
-                                    }
-                                }
-                            } catch (flashCheckError) {
-                                console.warn('Ошибка при проверке вспышки после запуска камеры:', flashCheckError);
-                            }
-                            
-                            modalSystem.scannerInitialized = true;
-                        } else {
-                            console.error('QR сканер не был инициализирован');
-                            if (statusElement) statusElement.textContent = 'Ошибка инициализации сканера';
-                        }
-                    } catch (startError) {
-                        console.error('Ошибка при запуске QR сканера:', startError);
-                        handleScannerError(startError, statusElement, resultElement, modalSystem);
-                    } finally {
-                        // Снимаем флаг инициализации
-                        qrScannerInitializing = false;
-                    }
-                }, 800);
-            } catch (startError) {
-                // Более подробный вывод ошибки
-                console.error('Ошибка при запуске QR сканера:', startError);
-                handleScannerError(startError, statusElement, resultElement, modalSystem);
-                
-                // Снимаем флаг инициализации
-                qrScannerInitializing = false;
-            }
-            
-        } catch (error) {
-            console.error('Ошибка при инициализации QR сканера:', error);
-            
-            const statusElement = document.getElementById('scannerStatus');
-            const resultElement = document.getElementById('scannerResult');
-            
-            handleScannerError(error, statusElement, resultElement, modalSystem);
-            
-            // Снимаем флаг инициализации
-            qrScannerInitializing = false;
-        }
-    })();
-}
-
-// Функция для обработки ошибок сканера с улучшенной обработкой AbortError
-function handleScannerError(error, statusElement, resultElement, modalSystem) {
-    let errorMessage = 'Проверьте, что у вас есть камера и вы дали разрешение на её использование';
-    let isAbortError = false;
-    
-    // Проверяем наличие AbortError в стеке ошибок
-    if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.toString().includes('AbortError')) {
-        errorMessage = 'Запуск камеры был прерван. Повторите попытку через несколько секунд.';
-        isAbortError = true;
-        console.warn('Обнаружена AbortError, планируем автоматический перезапуск');
-    }
-    // Определяем другие типы ошибок для более информативного сообщения
-    else if (error.name === 'NotAllowedError') {
-        errorMessage = 'Доступ к камере запрещен. Пожалуйста, предоставьте разрешение в настройках браузера.';
-    } else if (error.name === 'NotFoundError') {
-        errorMessage = 'Камера не найдена. Проверьте подключение камеры.';
-    } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        errorMessage = 'Камера уже используется другим приложением или недоступна.';
-    } else if (error.name === 'SecurityError') {
-        errorMessage = 'Использование камеры заблокировано политикой безопасности.';
-    } else if (error.name === 'OverconstrainedError') {
-        errorMessage = 'Не найдена камера, соответствующая заданным требованиям.';
-    }
-
-    if (statusElement) statusElement.textContent = 'Ошибка доступа к камере';
-    if (resultElement) {
-        resultElement.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                ${error.message || errorMessage}
-            </div>
-            <div class="d-flex justify-content-center mt-3">
-                <button class="btn btn-primary" id="retryCamera">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Повторить
-                </button>
-                <a href="https://support.google.com/chrome/answer/2693767" target="_blank" class="btn btn-link ms-2">
-                    Помощь <i class="bi bi-question-circle"></i>
-                </a>
-            </div>
-        `;
-    }
-    
-    // Добавляем обработчик кнопки "Повторить"
-    document.getElementById('retryCamera')?.addEventListener('click', () => {
-        if (resultElement) resultElement.innerHTML = '';
-        stopQrScannerModule(modalSystem);
-        modalSystem.scannerInitialized = false;
-        setTimeout(() => initQrScannerModule(modalSystem), 500);
-    });
-    
-    // Если это AbortError, попробуем автоматически перезапустить через 2 секунды
-    if (isAbortError) {
-        setTimeout(() => {
-            console.log('Автоматический перезапуск QR-сканера после AbortError...');
-            if (resultElement) resultElement.innerHTML = '';
-            stopQrScannerModule(modalSystem);
-            modalSystem.scannerInitialized = false;
-            setTimeout(() => initQrScannerModule(modalSystem), 500);
-        }, 2000);
-    }
-}
-
-// Функция для остановки QR сканера
-function stopQrScannerModule(modalSystem) {
-    console.log('Остановка QR сканера...');
-    
-    // Сбрасываем флаг инициализации
-    qrScannerInitializing = false;
-    
-    if (modalSystem.qrScanner) {
-        try {
-            modalSystem.qrScanner.stop();
-            modalSystem.qrScanner.destroy();
-            console.log('QR сканер остановлен');
-        } catch (e) {
-            console.warn('Ошибка при остановке QR сканера:', e);
-        }
-        modalSystem.qrScanner = null;
-    }
-    modalSystem.scannerInitialized = false;
-    
-    // Очищаем видеоэлемент
-    try {
-        const videoElem = document.getElementById('qrScannerVideo');
-        if (videoElem && videoElem.srcObject) {
-            const tracks = videoElem.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
-            videoElem.srcObject = null;
-            console.log('Видеопоток очищен');
-        }
-    } catch (e) {
-        console.warn('Ошибка при очистке видеопотока:', e);
-    }
-}
-
-// Функция для загрузки библиотеки QR-сканера
-function loadQrScannerLibrary() {
-    return new Promise((resolve, reject) => {
-        // Если библиотека уже загружена, сразу резолвим
-        if (typeof QrScanner !== 'undefined' && QrScanner.constructor.name !== 'MinimalQrScanner') {
-            console.log('Библиотека QrScanner уже загружена');
-            resolve();
-            return;
-        }
-        
-        let timeout = setTimeout(() => {
-            reject(new Error('Время ожидания загрузки библиотеки истекло'));
-        }, 10000);
-        
-        // Проверяем наличие библиотеки в window перед загрузкой
-        if (window.QrScannerLoading) {
-            console.log('Загрузка библиотеки уже в процессе, ожидаем...');
-            window.addEventListener('qrScannerLoaded', () => {
-                clearTimeout(timeout);
-                resolve();
-            }, { once: true });
-            return;
-        }
-        
-        console.log('Загрузка библиотеки QR сканера...');
-        window.QrScannerLoading = true;
-        
-        // Создаем обработчик ошибок для отслеживания проблем с загрузкой
-        const handleLoadError = (error) => {
-            clearTimeout(timeout);
-            window.QrScannerLoading = false;
-            console.error('Ошибка загрузки QR-сканера:', error);
-            reject(new Error(`Не удалось загрузить библиотеку QR сканера: ${error.message || 'неизвестная ошибка'}`));
-        };
-        
-        const script = document.createElement('script');
-        script.src = '/js/qr-scanner.min.js';
-        script.async = true;
-        script.crossOrigin = "anonymous"; // Добавляем для отладки CORS проблем
-        script.onload = () => {
-            clearTimeout(timeout);
-            
-            // После загрузки основного скрипта, устанавливаем путь к worker
-            if (QrScanner && QrScanner.WORKER_PATH === undefined) {
-                QrScanner.WORKER_PATH = '/js/qr-scanner-worker.min.js';
-            }
-            
-            console.log('Библиотека QR-сканера загружена');
-            window.QrScannerLoading = false;
-            window.dispatchEvent(new Event('qrScannerLoaded'));
-            
-            // Проверяем наличие метода toggleFlash для отладки
-            if (QrScanner && QrScanner.prototype) {
-                console.log('Проверка методов QrScanner:',
-                    'hasFlash:', typeof QrScanner.prototype.hasFlash === 'function', 
-                    'toggleFlash:', typeof QrScanner.prototype.toggleFlash === 'function');
-            }
-            
-            resolve();
-        };
-        script.onerror = handleLoadError;
-        
-        // Добавляем обработку ошибок для скрипта
-        script.addEventListener('error', handleLoadError);
-        
-        document.head.appendChild(script);
-        
-        // Также загружаем worker
-        const workerPreload = document.createElement('link');
-        workerPreload.rel = 'preload';
-        workerPreload.href = '/js/qr-scanner-worker.min.js';
-        workerPreload.as = 'script';
-        document.head.appendChild(workerPreload);
-    });
-}
-
-// Регистрируем функции для модальной системы
-window.initQrScannerModule = initQrScannerModule;
-window.stopQrScannerModule = stopQrScannerModule;
-
-// Проверка на мобильные устройства для оптимизации
-window.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-</script>
-
-<!-- Стили для QR сканера -->
 <style>
+/* Стили для модального окна с QR сканером */
 .camera-container {
     position: relative;
     width: 100%;
-    height: calc(100% - 105px);
+    height: 100vh;
     background-color: #000;
     overflow: hidden;
 }
@@ -714,21 +51,63 @@ window.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Oper
     left: 0;
     right: 0;
     bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: rgba(0, 0, 0, 0.3);
 }
 
 .scanner-frame {
     width: 70%;
     height: 40%;
-    border: 2px solid #fff;
+    max-width: 300px;
+    max-height: 300px;
     border-radius: 10px;
     box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
     position: relative;
+    border: none;
 }
 
+/* Стилизованные уголки для рамки сканирования */
+.scanner-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #fff;
+    border-style: solid;
+    border-width: 3px;
+}
+
+.top-left {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+    border-top-left-radius: 5px;
+}
+
+.top-right {
+    top: 0;
+    right: 0;
+    border-left: none;
+    border-bottom: none;
+    border-top-right-radius: 5px;
+}
+
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    border-right: none;
+    border-top: none;
+    border-bottom-left-radius: 5px;
+}
+
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+    border-bottom-right-radius: 5px;
+}
+
+/* Анимированная линия сканирования */
 .scanner-frame::before {
     content: '';
     position: absolute;
@@ -752,24 +131,287 @@ window.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Oper
     }
 }
 
-.scanning-status {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.scanner-controls {
-    border-top: 1px solid #dee2e6;
-}
-
-/* Стиль для кнопок камеры */
-#switchCameraBtn.active, #toggleFlashlightBtn.active {
-    background-color: #0d6efd;
-    color: white;
+/* Скрытые стили для состояний загрузки и ошибки */
+.scanner-loading, .scanner-error {
+    display: none !important;
 }
 </style>
+
+<script>
+/**
+ * Класс для управления системой сканирования QR-кодов
+ */
+class QRScannerController {
+    constructor() {
+        // DOM элементы
+        this.modal = document.getElementById('qrScannerModal');
+        this.backdrop = document.getElementById('qrScannerBackdrop');
+        this.videoElem = document.getElementById('qrScannerVideo');
+        this.loadingElem = document.getElementById('qrScannerLoading');
+        this.errorElem = document.getElementById('qrScannerError');
+        this.errorMessageElem = document.getElementById('qrScannerErrorMessage');
+        this.retryBtn = document.getElementById('qrScannerRetryBtn');
+        
+        // Настройки и состояние
+        this.qrScanner = null;
+        this.isScanning = false;
+        this.isInitialized = false;
+        this.isClosing = false;
+        this.isSafeToOpen = true;
+    }
+    
+    init() {
+        // Проверяем наличие необходимых элементов DOM
+        if (!this.modal || !this.videoElem) {
+            console.error('QRScanner: Необходимые элементы DOM не найдены');
+            return;
+        }
+        
+        this.setupEventHandlers();
+        this.isInitialized = true;
+        console.log('QRScanner: Контроллер инициализирован');
+    }
+    
+    setupEventHandlers() {
+        // Интеграция с модальной системой
+        if (this.modal) {
+            this.modal.addEventListener('show.modal-panel', () => {
+                console.log('QRScanner: Модальное окно показано, запускаем сканер');
+                setTimeout(() => this.startScanner(), 200);
+            });
+        }
+        
+        // Обработчик для кнопки повтора
+        if (this.retryBtn) {
+            this.retryBtn.addEventListener('click', () => this.startScanner());
+        }
+    }
+    
+    /**
+     * Открыть модальное окно сканера
+     */
+    open(event) {
+        // Проверяем, является ли аргумент событием DOM и имеет метод preventDefault
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
+        }
+        
+        // Проверяем блокировки перед открытием
+        if (window.modalClosingInProgress || window.qrScannerBlockOpen || 
+            this.isClosing || !this.isSafeToOpen) {
+            console.log('QRScanner: Предотвращено открытие (флаги защиты активны)');
+            return false;
+        }
+        
+        this.isSafeToOpen = false;
+        
+        // Делегируем открытие модальной системе
+        if (window.modalPanel) {
+            const result = window.modalPanel.openModal('qrScannerModal');
+            
+            setTimeout(() => {
+                this.isSafeToOpen = true;
+            }, 1000);
+            
+            return result;
+        } else {
+            console.warn('QRScanner: Модальная система не найдена');
+            
+            setTimeout(() => {
+                this.isSafeToOpen = true;
+            }, 1000);
+            
+            return false;
+        }
+    }
+    
+    /**
+     * Закрыть модальное окно сканера
+     */
+    close() {
+        console.log('QRScanner: Закрытие через контроллер');
+        
+        this.isClosing = true;
+        window.qrScannerBlockOpen = true;
+        
+        // Останавливаем сканер
+        this.stopScanner();
+        
+        // Делегируем закрытие модальной системе
+        if (window.modalPanel) {
+            window.modalPanel.closeModal(true);
+        }
+        
+        setTimeout(() => {
+            this.isClosing = false;
+            window.qrScannerBlockOpen = false;
+        }, 2000);
+    }
+    
+    /**
+     * Запускает сканер QR-кодов
+     */
+    async startScanner() {
+        // Проверяем доступность библиотеки
+        if (typeof QrScanner !== 'function') {
+            console.error('QRScanner: Библиотека QrScanner не доступна');
+            this.showError('Библиотека QR Scanner не загружена');
+            return;
+        }
+        
+        try {
+            // Если сканер уже запущен, не создаем новый
+            if (this.qrScanner && this.isScanning) {
+                console.log('QRScanner: Сканер уже запущен');
+                this.loadingElem.style.display = 'none';
+                return;
+            }
+            
+            // Останавливаем предыдущий сканер, если есть
+            if (this.qrScanner) {
+                this.stopScanner();
+            }
+            
+            // Создаем сканер
+            this.qrScanner = new QrScanner(
+                this.videoElem,
+                this.handleScan.bind(this),
+                {
+                    highlightScanRegion: false,
+                    highlightCodeOutline: false,
+                    returnDetailedScanResult: true
+                }
+            );
+            
+            // Запускаем сканер
+            await this.qrScanner.start();
+            this.isScanning = true;
+            
+            // Скрываем индикатор загрузки
+            if (this.loadingElem) {
+                this.loadingElem.style.display = 'none';
+            }
+            
+            console.log('QRScanner: Сканер успешно запущен');
+            
+        } catch (error) {
+            console.error('QRScanner: Ошибка при запуске сканера', error);
+            this.showError('Не удалось запустить сканер: ' + error.message);
+        }
+    }
+    
+    /**
+     * Останавливает сканер
+     */
+    stopScanner() {
+        if (this.qrScanner && this.isScanning) {
+            try {
+                this.qrScanner.stop();
+                this.qrScanner.destroy();
+                this.qrScanner = null;
+                this.isScanning = false;
+                console.log('QRScanner: Сканер остановлен и уничтожен');
+            } catch (error) {
+                console.warn('QRScanner: Ошибка при остановке сканера', error);
+                this.qrScanner = null;
+                this.isScanning = false;
+            }
+        }
+    }
+    
+    /**
+     * Обрабатывает результат сканирования QR-кода
+     */
+    handleScan(scanResult) {
+        if (!scanResult || !scanResult.data) {
+            return;
+        }
+        
+        const qrData = scanResult.data;
+        console.log('QRScanner: Код отсканирован', qrData);
+        
+        // Воспроизводим звуковой эффект при успешном сканировании
+        this.playSuccessSound();
+        
+        // Останавливаем сканер
+        this.stopScanner();
+        
+        // Добавляем небольшую задержку перед закрытием модального окна и переходом
+        setTimeout(() => {
+            // Закрываем модальное окно
+            this.close();
+            
+            // Проверяем, является ли результат действительным URL
+            if (this.isValidUrl(qrData)) {
+                window.location.href = qrData;
+            } else {
+                // Если не URL, вызываем событие
+                document.dispatchEvent(new CustomEvent('qrCodeScanned', { 
+                    detail: { data: qrData } 
+                }));
+            }
+        }, 500);
+    }
+    
+    /**
+     * Проверяет, является ли строка допустимым URL
+     */
+    isValidUrl(str) {
+        try {
+            new URL(str);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Показывает ошибку в интерфейсе
+     */
+    showError(message) {
+        if (this.loadingElem) this.loadingElem.style.display = 'none';
+        if (this.errorElem) this.errorElem.style.display = 'flex';
+        if (this.errorMessageElem) this.errorMessageElem.textContent = message;
+        console.error('QRScanner Error:', message);
+    }
+    
+    /**
+     * Воспроизводит звук успешного сканирования
+     */
+    playSuccessSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(1800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(500, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        } catch (error) {
+            console.warn('QRScanner: Невозможно воспроизвести звук', error);
+        }
+    }
+}
+
+// Инициализируем контроллер QR-сканера
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.qrScannerController) {
+        window.qrScannerController = new QRScannerController();
+        window.qrScannerController.init();
+    }
+    
+    // Глобальные флаги для отслеживания состояния
+    window.modalClosingInProgress = window.modalClosingInProgress || false;
+    window.qrScannerBlockOpen = window.qrScannerBlockOpen || false;
+    window.lastModalClosed = window.lastModalClosed || 0;
+});
+</script>

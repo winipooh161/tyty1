@@ -410,7 +410,7 @@
         100% { transform: rotate(360deg); }
     }
     
-    .modal-qr-instructions {
+    .qrScannerModal-instructions {
         margin-top: 20px;
         font-size: 14px;
         text-align: center;

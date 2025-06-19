@@ -15,7 +15,7 @@
                         <div class="text-center mb-4">
                             <label for="avatar" class="avatar-upload-container">
                                 <img src="{{ Auth::user()->avatar ? asset('storage/avatars/'.Auth::user()->avatar) : asset('images/default-avatar.jpg') }}" 
-                                     class="profile-avatar rounded-circle" alt="Аватар">
+                                     class="profile-avatar " alt="Аватар">
                                 <div class="avatar-overlay">
                                     <i class="bi bi-camera"></i>
                                 </div>

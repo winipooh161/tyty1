@@ -1,7 +1,7 @@
 <div id="coverPreviewContainer" class="cover-container">
     @if($userTemplate->cover_path)
         @php
-            $coverPath = 'storage/template_covers/'.$userTemplate->cover_path;
+            $coverPath = 'storage/'.$userTemplate->cover_path;
             $coverExists = file_exists(public_path($coverPath));
         @endphp
         

@@ -61,11 +61,21 @@ export class MobileNavEvents {
             
             console.log('⚡️ Событие modal.opened получено:', { modalId, sourceIconId });
             
+            // Проверяем, есть ли ID иконки и модального окна
             if (modalId && sourceIconId) {
-                console.log(`🔄 Преобразуем иконку ${sourceIconId} в кнопку "назад" для модалки ${modalId}`);
+                // Если иконка уже активна, сначала восстанавливаем её,
+                // чтобы обеспечить корректное обновление обработчиков
+                if (this.activeIconId === sourceIconId) {
+                    console.log(`🔄 Обновляем обработчики для иконки ${sourceIconId}`);
+                    // Восстанавливаем иконку перед повторным преобразованием
+                    this.core.restoreIcon(sourceIconId);
+                } else {
+                    console.log(`🔄 Преобразуем иконку ${sourceIconId} в кнопку "назад" для модалки ${modalId}`);
+                }
+                
                 this.activeIconId = sourceIconId;
                 
-                // Преобразуем иконку в кнопку "назад"
+                // Всегда преобразуем иконку в кнопку "назад" для обновления обработчиков
                 const success = this.core.convertIconToBackButton(sourceIconId);
                 console.log(`Результат преобразования: ${success ? 'успешно' : 'ошибка'}`);
             }
@@ -238,6 +248,23 @@ export class MobileNavEvents {
                     element: trigger,
                     iconId: iconId
                 });
+                
+                // Специальная обработка для QR-сканера
+                if (iconId === 'qr-scanner') {
+                    trigger.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        console.log('QR Scanner клик обработан в MobileNavEvents');
+                        
+                        // Открываем модальное окно через глобальную функцию
+                        if (window.openQrScannerModal) {
+                            window.openQrScannerModal(trigger);
+                        } else if (window.modalPanel) {
+                            window.modalPanel.openModal(modalId);
+                        }
+                    });
+                }
             }
         });
     }

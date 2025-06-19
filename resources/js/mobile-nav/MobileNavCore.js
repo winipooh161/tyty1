@@ -1,194 +1,240 @@
 export class MobileNavCore {
     constructor() {
-        // DOM-элементы
-        this.navigation = null; // Контейнер навигации
-        this.container = null; // Контейнер скроллера
-        this.iconsContainer = null; // Контейнер с иконками
-        this.items = []; // Массив элементов навигации
-        this.initialActiveItem = null; // Исходно активный элемент
-        
-        // Настройки
-        this.sidePadding = 20; // Отступы с обеих сторон
+        // Основные элементы
+        this.container = null;
+        this.iconsContainer = null;
+        this.items = [];
+        this.centerPoint = 0;
+        this.sidePadding = 16; // Стандартный отступ по бокам
         
         // Состояние
-        this.isInitialized = false; // Флаг инициализации
-        this.isLoading = true; // Флаг загрузки
-        this.originalItems = new Map(); // Сохранение оригинальных иконок для восстановления
-
-        // Инициализация
+        this.isInitialized = false;
+        this.activeIconId = null;
+        this.originalIcons = new Map(); // Для хранения оригинальных иконок
+        
+        // Инициализация после создания объекта
         this.init();
+        
+        // Инициализация с проверкой страницы редактора
+        this.checkEditorPage();
+        
+        // Слушаем изменения URL
+        window.addEventListener('popstate', () => this.checkEditorPage());
     }
-
-    // Ленивая инициализация навигации
+    
     init() {
-        if (this.isInitialized) return;
-
-        // Используем DOMContentLoaded для безопасной инициализации
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                this.setupNavigation();
+                this.findElements();
             });
         } else {
-            // DOM уже загружен, инициализируем сейчас
-            this.setupNavigation();
+            // DOM уже загружен
+            setTimeout(() => this.findElements(), 100);
         }
     }
-
-    // Настройка навигации
-    setupNavigation() {
-        // Находим основные DOM-элементы
-        this.navigation = document.querySelector('.mb-navigation');
-        if (!this.navigation) {
-            console.warn('MobileNavCore: Элемент навигации не найден в DOM');
-            return;
-        }
-
+    
+    findElements() {
+        // Находим контейнер для скролла
         this.container = document.getElementById('nav-scroll-container');
+        
+        // Находим контейнер с иконками
         this.iconsContainer = document.getElementById('nav-icons-container');
-
+        
+        // Проверяем, найдены ли все элементы
         if (!this.container || !this.iconsContainer) {
-            console.warn('MobileNavCore: Не найдены необходимые контейнеры для навигации');
+            console.warn('MobileNavCore: Не все элементы найдены, повторная попытка через 500ms');
+            setTimeout(() => this.findElements(), 500);
             return;
         }
-
-        // Получаем все элементы навигации
+        
+        // Находим все иконки
         this.items = Array.from(this.iconsContainer.querySelectorAll('.mb-icon-wrapper'));
         
-        // Если элементы есть, инициализируем навигацию
+        // Вычисляем центральную точку контейнера
+        this.calculateCenterPoint();
+        
+        // Если есть иконки, инициализируем навигацию
         if (this.items.length > 0) {
-            this.setupItems();
             this.isInitialized = true;
-            this.showNavigation();
-            
-            // Инициализация завершена, снимаем флаг загрузки
-            setTimeout(() => {
-                this.isLoading = false;
-            }, 300);
-        } else {
-            console.warn('MobileNavCore: Не найдены элементы навигации');
-        }
-    }
-
-    // Настройка элементов навигации
-    setupItems() {
-        // Проходим по всем элементам и настраиваем их
-        this.items.forEach((item, index) => {
-            // Задаем CSS-переменную для задержки анимации
-            item.style.setProperty('--item-index', index);
-            
-            // Сохраняем оригинальное содержимое для возможности восстановления
-            const itemId = item.getAttribute('data-icon-id');
-            if (itemId) {
-                this.originalItems.set(itemId, item.innerHTML);
-            }
-            
-            // Проверяем, является ли элемент активным
-            const isActive = item.querySelector('.mb-active') !== null;
-            
-            if (isActive && !this.initialActiveItem) {
-                this.initialActiveItem = item;
-            }
-            
-            // Добавляем плавную загрузку иконок
-            setTimeout(() => {
-                item.classList.add('mb-icon-loaded');
-            }, 100 + index * 60); // Небольшая задержка для каждой следующей иконки
-        });
-    }
-
-    // Показать навигацию
-    showNavigation() {
-        if (this.navigation) {
-            requestAnimationFrame(() => {
-                this.navigation.classList.add('mb-nav-loaded');
-                this.navigation.classList.remove('mb-nav-hidden');
-            });
+            console.log('MobileNavCore: Навигация инициализирована');
         }
     }
     
-    // Скрыть навигацию
+    calculateCenterPoint() {
+        // Центральная точка - середина контейнера
+        this.centerPoint = this.container ? this.container.offsetWidth / 2 : 0;
+    }
+    
+    // Скрытие навигационной панели
     hideNavigation() {
-        if (this.navigation) {
-            requestAnimationFrame(() => {
-                this.navigation.classList.add('mb-nav-hidden');
-            });
+        const navigation = document.querySelector('.mb-navigation');
+        if (navigation) {
+            navigation.classList.add('mb-nav-hidden');
         }
     }
     
-    // Метод для преобразования иконки в кнопку "назад"
+    // Показ навигационной панели
+    showNavigation() {
+        const navigation = document.querySelector('.mb-navigation');
+        if (navigation) {
+            navigation.classList.remove('mb-nav-hidden');
+        }
+    }
+    
+    // Преобразование иконки в кнопку "назад"
     convertIconToBackButton(iconId) {
-        // Находим элемент по идентификатору
-        const iconWrapper = this.iconsContainer.querySelector(`[data-icon-id="${iconId}"]`);
+        if (!this.isInitialized) return false;
         
-        if (!iconWrapper) {
-            console.warn(`Иконка с идентификатором ${iconId} не найдена`);
+        // Если у нас уже активна какая-то иконка, восстанавливаем её
+        if (this.activeIconId && this.activeIconId !== iconId) {
+            this.restoreIcon(this.activeIconId);
+        }
+        
+        // Находим иконку по ID
+        const iconElement = this.items.find(item => item.getAttribute('data-icon-id') === iconId);
+        
+        if (!iconElement) {
+            console.warn(`MobileNavCore: Иконка с ID ${iconId} не найдена`);
             return false;
         }
         
-        // Проверяем, не является ли иконка уже кнопкой "назад"
-        if (iconWrapper.classList.contains('back-button-active')) {
-            return true; // Уже преобразована
-        }
+        // Сохраняем оригинальное состояние иконки
+        const iconLink = iconElement.querySelector('a');
+        const iconImg = iconElement.querySelector('.mb-nav-icon');
         
-        // Сохраняем оригинальное содержимое, если еще не сохранено
-        if (!this.originalItems.has(iconId)) {
-            this.originalItems.set(iconId, iconWrapper.innerHTML);
-        }
-        
-        // Создаем кнопку "назад"
-        iconWrapper.innerHTML = `
-            <a class="mb-nav-link back-button" href="javascript:void(0);" title="Вернуться назад">
-                <div class="mb-nav-icon-wrap">
-                    <img class="mb-nav-icon" src="/images/icons/arrow-left.svg" alt="Назад"
-                         onerror="this.src='/images/icons/back.svg';">
-                </div>
-            </a>
-        `;
-        
-        // Добавляем класс для анимации
-        iconWrapper.classList.add('back-button-active');
-        
-        // Добавляем обработчик для возврата
-        const backButton = iconWrapper.querySelector('.back-button');
-        backButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // Закрываем открытое модальное окно
-            if (window.modalPanel && window.modalPanel.activeModal) {
-                window.modalPanel.closeModal();
+        if (iconLink && iconImg) {
+            // Сохраняем оригинальное содержимое, если еще не сохранено
+            if (!this.originalIcons.has(iconId)) {
+                this.originalIcons.set(iconId, {
+                    link: iconLink.getAttribute('href'),
+                    img: iconImg.getAttribute('src'),
+                    classes: iconElement.className,
+                    linkClasses: iconLink.className
+                });
             }
             
-            // Восстанавливаем исходную иконку
-            this.restoreIcon(iconId);
-        });
+            // Меняем на кнопку "назад"
+            iconLink.setAttribute('href', 'javascript:void(0);');
+            iconLink.classList.add('mb-nav-back-btn');
+            iconImg.setAttribute('src', '/images/icons/arrow-left.svg');
+            iconElement.classList.add('back-button-active');
+            
+            // Удаляем предыдущий обработчик события (если есть)
+            if (iconLink._closeModalHandler) {
+                iconLink.removeEventListener('click', iconLink._closeModalHandler);
+            }
+            
+            // Создаем обработчик для закрытия модального окна
+            iconLink._closeModalHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Нажата кнопка "Назад" для закрытия модального окна');
+                
+                if (window.modalPanel) {
+                    window.modalPanel.closeModal();
+                }
+                return false;
+            };
+            
+            // Добавляем обработчик для закрытия модального окна
+            iconLink.addEventListener('click', iconLink._closeModalHandler);
+            
+            // Добавляем прямой обработчик onclick как запасной вариант
+            iconLink.onclick = iconLink._closeModalHandler;
+            
+            // Устанавливаем активную иконку
+            this.activeIconId = iconId;
+            
+            return true;
+        }
         
-        return true;
+        return false;
     }
     
-    // Восстановление исходной иконки
+    // Восстановление оригинальной иконки
     restoreIcon(iconId) {
-        const iconWrapper = this.iconsContainer.querySelector(`[data-icon-id="${iconId}"]`);
+        if (!this.isInitialized) return false;
         
-        if (!iconWrapper) {
-            console.warn(`Иконка с идентификатором ${iconId} не найдена для восстановления`);
+        // Проверяем, сохранены ли оригинальные данные для этой иконки
+        if (!this.originalIcons.has(iconId)) return false;
+        
+        // Находим иконку по ID
+        const iconElement = this.items.find(item => item.getAttribute('data-icon-id') === iconId);
+        
+        if (!iconElement) {
+            console.warn(`MobileNavCore: Иконка с ID ${iconId} для восстановления не найдена`);
             return false;
         }
         
-        // Получаем оригинальное содержимое
-        const originalContent = this.originalItems.get(iconId);
+        // Получаем оригинальные данные
+        const originalData = this.originalIcons.get(iconId);
         
-        if (!originalContent) {
-            console.warn(`Не найдено оригинальное содержимое для иконки ${iconId}`);
-            return false;
+        // Находим элементы для восстановления
+        const iconLink = iconElement.querySelector('a');
+        const iconImg = iconElement.querySelector('.mb-nav-icon');
+        
+        if (iconLink && iconImg && originalData) {
+            // Удаляем обработчик закрытия модального окна
+            if (iconLink._closeModalHandler) {
+                iconLink.removeEventListener('click', iconLink._closeModalHandler);
+                delete iconLink._closeModalHandler;
+            }
+            
+            // Восстанавливаем оригинальное состояние
+            iconLink.setAttribute('href', originalData.link);
+            iconLink.className = originalData.linkClasses;
+            iconImg.setAttribute('src', originalData.img);
+            iconElement.className = originalData.classes;
+            
+            // Удаляем прямой обработчик onclick
+            iconLink.onclick = null;
+            
+            // Удаляем из сохраненных оригиналов
+            this.originalIcons.delete(iconId);
+            
+            // Если это была активная иконка, сбрасываем активную иконку
+            if (this.activeIconId === iconId) {
+                this.activeIconId = null;
+            }
+            
+            return true;
         }
         
-        // Восстанавливаем оригинальное содержимое
-        iconWrapper.innerHTML = originalContent;
+        return false;
+    }
+    
+    /**
+     * Проверяет, находимся ли на странице редактора и обеспечивает видимость навигации
+     */
+    checkEditorPage() {
+        const currentUrl = window.location.href;
+        const isEditorPage = /\/templates\/editor\/\d+/.test(currentUrl) || 
+                            /\/client\/templates\/editor\/\d+/.test(currentUrl);
         
-        // Удаляем класс кнопки "назад"
-        iconWrapper.classList.remove('back-button-active');
-        
-        return true;
+        if (isEditorPage) {
+            this.ensureNavigationVisible();
+            document.documentElement.classList.add('editor-page');
+            
+            // Для отладки
+            console.log('Редактор обнаружен: ' + currentUrl);
+        } else {
+            document.documentElement.classList.remove('editor-page');
+        }
+    }
+    
+    /**
+     * Обеспечивает видимость навигационной панели
+     */
+    ensureNavigationVisible() {
+        const navElement = document.querySelector('.mb-navigation');
+        if (navElement) {
+            navElement.style.display = 'flex';
+            navElement.classList.remove('mb-nav-hidden');
+            navElement.classList.add('mb-nav-force-visible');
+            
+            // Для отладки
+            console.log('Навигационная панель принудительно отображена');
+        }
     }
 }
-

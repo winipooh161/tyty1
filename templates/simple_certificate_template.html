@@ -28,8 +28,7 @@
 
         .certificate-container {
             width: 100%;
-            height: 100%;
-            min-height: 100%;
+       
             max-width: 800px;
             background: white;
             /* border-radius: 8px; */
@@ -169,10 +168,12 @@
         .faq-container {
             margin-top: 30px;
         }
-
+.certificate-container-title p {
+    margin: 0 !important;
+}
         .faq-item {
             margin-bottom: 20px;
-            padding: 0px;
+            padding: 10px 17px;
             border-radius: 8px;
             background-color: #f8f9fa;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -276,156 +277,231 @@
 
         /* Стили для ссылок в тексте */
         .auto-links a {
-            color: blue;
-            text-decoration: underline;
+            color: #007bff;
+            text-decoration: none;
+            border-bottom: 1px dashed #007bff;
+            transition: color 0.2s, border-color 0.2s;
+            padding: 0 2px;
         }
-
-        /* Стили для полей с датами */
-        .issue-date-s,
-        .issue-date-do {
-            cursor: pointer;
+        
+        .auto-links a:hover {
+            color: #0056b3;
+            border-bottom: 1px solid #0056b3;
         }
-
-        /* Скрыть автоматически созданные input-элементы */
-        input.flatpickr-input {
-            display: none !important;
+        
+        /* Стили для социальных иконок */
+        .auto-links a i {
+            margin-right: 3px;
         }
-
-        .series-info {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            font-size: 12px;
-            color: #666;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
+        
+        /* Сохранение переносов строк */
+        .preserve-whitespace {
+            white-space: pre-wrap;
         }
-
-        .series-info p {
-            margin: 5px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        
+        /* Добавляем визуальные подсказки для ссылок в режиме редактирования */
+        [contenteditable=true] a {
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            padding: 0 3px;
         }
-
-        .series-info input {
-            border: none;
-            background: transparent;
-            font-weight: bold;
-            color: #333;
-            width: 50px;
-            text-align: right;
+        
+        /* Добавляем стили для различных типов ссылок */
+        .auto-links .phone-link {
+            color: #28a745;
+            border-bottom-color: #28a745;
         }
-
-        .series-info input:focus {
-            outline: 1px solid #007bff;
-            background-color: #f0f8ff;
+        
+        .auto-links .email-link {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
         }
+        
+        .auto-links .social-link {
+            color: #6610f2;
+            border-bottom-color: #6610f2;
+        }.series-item {
+    display: flex;
+}
+    
+    /* Стили для календаря и дат */
+    .issue-date-s, .issue-date-do {
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        display: inline-block;
+        user-select: none;
+        position: relative;
+    }
+    
+    .issue-date-s:hover, .issue-date-do:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+        box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.2);
+    }
+    
+    .date-selecting {
+        background-color: rgba(0, 123, 255, 0.2) !important;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5) !important;
+    }
+    
+    /* Скрываем дополнительные input-элементы */
+    .date-hidden-input, input.flatpickr-input {
+        position: absolute !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        height: 0 !important;
+        width: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+    }
+    
+    /* Стили для улучшения внешнего вида flatpickr */
+    .flatpickr-calendar {
+        border-radius: 8px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        padding: 10px !important;
+    }
+    
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected:focus, 
+    .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, 
+    .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover {
+        background: rgba(0, 123, 255, 0.8) !important;
+        border-color: rgba(0, 123, 255, 0.8) !important;
+    }
+    
+    .flatpickr-day.today {
+        border-color: rgba(0, 123, 255, 0.5) !important;
+    }
+    
+    .flatpickr-day.today:hover, .flatpickr-day.today:focus {
+        background: rgba(0, 123, 255, 0.1) !important;
+        border-color: rgba(0, 123, 255, 0.8) !important;
+    }
+    
+    .flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-time input:focus, 
+    .flatpickr-time .flatpickr-am-pm:focus {
+        background: rgba(0, 123, 255, 0.1) !important;
+    }
 
-        /* Скрываем информацию о серии в режиме печати */
-        @media print {
-            .series-info {
-                display: none;
-            }
-        }
-
-        /* Стили для кнопок действий */
-        .certificate-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 30px;
-            margin-bottom: 20px;
-        }
-
-        .certificate-buttons button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .certificate-buttons button.red {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .certificate-buttons button.green {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .certificate-buttons button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .certificate-buttons button.red:hover {
-            background-color: #c82333;
-        }
-
-        .certificate-buttons button.green:hover {
-            background-color: #218838;
-        }
-
-        .faq-question {
-            cursor: pointer;
-            padding: 10px 15px;
-            background-color: #f1f1f1;
-            margin-bottom: 1px;
-            position: relative;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .faq-question:after {
-            content: '+';
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .faq-question.active:after {
-            content: '-';
-        }
-
-        .faq-answer {
-            padding: 0 15px;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background-color: #f9f9f9;
-            border-radius: 0 0 4px 4px;
-        }
-
-        /* Стили для блока информации о серии */
+        /* Стили для блока деталей серии */
         .certificate-series-info {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 10px;
+            background-color: #f9f9fa;
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+            margin: 10px 0;
         }
 
         .series-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 10px;
+        }
+
+        .series-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
         }
 
         .series-item p {
+            font-weight: 600;
+            color: #555;
             margin: 0;
+            font-size: 14px;
+            flex: 1;
         }
 
-        .series-item input {
-            width: 60px;
-            padding: 3px 5px;
+        .series-item input[type="text"] {
+            width: 80px;
+            text-align: center;
             border: 1px solid #ddd;
-            border-radius: 3px;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 14px;
+            background-color: #fff;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+        }
+
+        .series-item input[type="text"]:focus {
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+            outline: none;
+        }
+
+        .series-item input[readonly] {
+            background-color: #f3f4f6;
+            color: #777;
+            cursor: not-allowed;
+        }
+        
+        /* Выделение особых значений */
+        .series-item input[data-editable="series_quantity"] {
+            color: #2c7be5;
+            border-color: #c1d7f9;
+        }
+        
+        .series-item input[data-editable="required_scans"] {
+            color: #e63757;
+            border-color: #fad7dd;
+        }
+
+        /* Дополнительные стили для активного блока FAQ */
+        .faq-item.active .certificate-series-info {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* Медиа-запрос для мобильных устройств */
+        @media (max-width: 576px) {
+            .series-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .series-item p {
+                margin-bottom: 5px;
+                font-size: 12px;
+            }
+
+            .series-item input[type="text"] {
+                width: 100%;
+            }
+        }
+
+        /* Стили для объединенного отображения сканирований */
+        .scan-progress-wrapper {
+            position: relative;
+            width: 80px;
+        }
+        
+        .scan-progress-display {
+            width: 100%;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 14px;
+            background-color: #fff;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            color: #555;
+            cursor: default;
+        }
+        
+        .scan-progress-display:hover {
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
         }
     </style>
 </head>
@@ -437,31 +513,37 @@
                 <h1 class="certificate-title" data-editable="certificate_title">Имя компании</h1>
                 <p class="issue-date-s" data-editable="issue-date-s">с: 1 июня 2023 г.</p>
                 <p class="issue-date-do" data-editable="issue_date-do">до: 1 июня 2024 г.</p>
-
             </div>
             <div class="qr-container">
-                <div id="qrcode"></div>
-                <div id="qr-loading" class="qr-loading">
-                    <div class="qr-spinner"></div>
+            <div id="qrcode">
+                <!-- QR-код заглушка для режима редактирования -->
+                <div class="qrcode-placeholder">
+                    <svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="100" height="100" fill="#f0f0f0" stroke="#cccccc" stroke-width="2"/>
+                        <text x="50" y="50" font-family="Arial" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#888888">QR код</text>
+                        <g stroke="#888888" stroke-width="2">
+                            <rect x="20" y="20" width="60" height="60" fill="none"/>
+                            <rect x="30" y="30" width="40" height="40" fill="none"/>
+                            <rect x="40" y="40" width="20" height="20" fill="none"/>
+                        </g>
+                    </svg>
                 </div>
             </div>
+            <div id="qr-loading" class="qr-loading">
+                <div class="qr-spinner"></div>
+            </div>
+        </div>
         </div>
 
         <p class="certificate_description" data-editable="certificate_description">
             В данном блоке требуется написать условия, пожелания, требования и т.д. не больше 350 символов
-
         </p>
 
         <div class="faq-container">
             <div class="faq-item">
                 <div class="faq-question">Связь:</div>
                 <div class="faq-answer">
-                    <p data-editable="faq_answer_1">Пример текста: "<br>
-                        Вк:
-                        https://vk.com/your_profile <br>
-                        Телеграм: @your_username <br>
-                        WhatsApp: +1234567890 <br>
-                        Адрес: Москва, ул. Примерная, д. 1, оф. 2 <br>"
+                    <p data-editable="faq_answer_1">Пример текста: "Я люблю макорошки и пельмешки, ссылка на лучшие пельмешки в городе москва : https://pelmeshka.ru"
                     </p>
                 </div>
             </div>
@@ -479,180 +561,688 @@
                             <input type="text" data-editable="series_received" placeholder="0" readonly value="0">
                         </div>
                         <div class="series-item">
-                            <p>Текущ. сканирований:</p> 
-                            <input type="text" data-editable="scan_count" placeholder="0" readonly value="0">
-                        </div>
-                        <div class="series-item">
-                            <p>Требуется сканирований:</p> 
-                            <input type="text" data-editable="required_scans" placeholder="1" value="1">
+                            <p>Сканирования:</p>
+                            <div class="scan-progress-wrapper">
+                                <input type="text" class="scan-progress-display" readonly value="0 / 1" title="Текущие / Требуемые сканирования">
+                                <!-- Скрытые поля для сохранения отдельных значений -->
+                                <input type="hidden" data-editable="scan_count" value="0">
+                                <input type="hidden" data-editable="required_scans" value="1">
+                            </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
 
-        <!-- JavaScript для управления видимостью кнопок -->
+        <!-- Основной JavaScript модуль для шаблонов -->
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Определяем, на какой странице мы находимся
-                const currentUrl = window.location.href;
-                const isTemplateViewPage = currentUrl.includes('/template/');
-                const isTemplateCreatePage = currentUrl.includes('/templates/create-new/');
+        /**
+         * TemplateJS - Универсальный модульный JavaScript для шаблонов сертификатов
+         * Версия 1.1
+         */
+        (function() {
+            // Создаем глобальный объект TemplateJS
+            window.TemplateJS = {
+                // Конфигурация по умолчанию
+                config: {
+                    mode: null, // 'edit' или 'view', определяется автоматически
+                    selectors: {
+                        faqQuestion: '.faq-question',
+                        faqItem: '.faq-item',
+                        faqAnswer: '.faq-answer',
+                        dateStart: '.issue-date-s',
+                        dateEnd: '.issue-date-do',
+                        contactField: '[data-editable="faq_answer_1"]',
+                        editableElements: '[data-editable]',
+                        seriesQuantity: '[data-editable="series_quantity"]',
+                        seriesReceived: '[data-editable="series_received"]',
+                        scanCount: '[data-editable="scan_count"]',
+                        requiredScans: '[data-editable="required_scans"]'
+                    },
+                    debug: true // Режим отладки включен по умолчанию
+                },
 
-                // Функция для инициализации flatpickr на элементе только на странице создания
-                function initFlatpickr(selector, textPrefix) {
-                    const element = document.querySelector(selector);
-                    if (!element) {
-                        console.error('Элемент ' + selector + ' не найден');
-                        return;
-                    }
-
-                    // Если мы находимся на странице просмотра, делаем поля нередактируемыми
-                    if (isTemplateViewPage) {
-                        element.removeAttribute('data-editable');
-                        element.contentEditable = false;
-                        return; // Выходим из функции, не создавая календарь
+                /**
+                 * Инициализация всех компонентов шаблона
+                 * @param {Object} customConfig - Пользовательские настройки
+                 */
+                init: function(customConfig = {}) {
+                    // Объединяем пользовательские настройки с настройками по умолчанию
+                    this.config = {...this.config, ...customConfig};
+                    
+                    // Определяем режим работы
+                    this.detectMode();
+                    
+                    // Инициализируем логгер
+                    this.logger = this.createLogger(this.config.debug);
+                    this.logger.info('Инициализация TemplateJS в режиме:', this.config.mode);
+                    
+                    // Инициализируем компоненты
+                    this.initComponents();
+                    
+                    // Экспортируем функции в глобальную область
+                    this.exportFunctions();
+                    
+                    return this;
+                },
+                
+                /**
+                 * Определяет режим работы шаблона (просмотр или редактирование)
+                 */
+                detectMode: function() {
+                    // Если режим не был явно задан, определяем его по URL
+                    if (!this.config.mode) {
+                        const url = window.location.href;
+                        if (url.includes('/template/')) {
+                            this.config.mode = 'view';
+                        } else if (url.includes('/editor') || url.includes('/create-new')) {
+                            this.config.mode = 'edit';
+                        } else {
+                            // По умолчанию - режим редактирования
+                            this.config.mode = 'edit';
+                        }
                     }
                     
-                    // Создаём экземпляр календаря только на странице создания нового шаблона
-                    if (isTemplateCreatePage) {
-                        const fp = flatpickr(element, {
-                            locale: 'ru',
-                            dateFormat: 'd F Y г.',
-                            disableMobile: true, // Отключаем мобильную версию
-                            allowInput: false,   // Запрещаем ввод через input
-                            clickOpens: true,    // Открывать по клику
-                            onChange: function (selectedDates, dateStr) {
-                                // Обновляем текст в p-элементе
-                                element.textContent = textPrefix + dateStr;
-
-                                // Удаляем лишние input-элементы (если они были созданы)
+                    // Добавляем класс к body для стилей в зависимости от режима
+                    document.body.classList.add('template-' + this.config.mode);
+                    
+                    return this.config.mode;
+                },
+                
+                /**
+                 * Создает объект для логгирования
+                 */
+                createLogger: function(isDebug) {
+                    return {
+                        prefix: '[TemplateJS]',
+                        info: function(...args) {
+                            if (isDebug) console.info(this.prefix, ...args);
+                        },
+                        warn: function(...args) {
+                            if (isDebug) console.warn(this.prefix, ...args);
+                        },
+                        error: function(...args) {
+                            console.error(this.prefix, ...args);
+                        }
+                    };
+                },
+                
+                /**
+                 * Инициализирует все компоненты шаблона
+                 */
+                initComponents: function() {
+                    try {
+                        // Инициализируем аккордеон для FAQ
+                        this.initAccordion();
+                        
+                        // Инициализируем выбор даты
+                        this.initDatePickers();
+                        
+                        // Обрабатываем ссылки в тексте
+                        this.processLinks();
+                        
+                        // Инициализируем заглушку QR-кода
+                        this.initQrCodePlaceholder();
+                        
+                        // Если режим просмотра - отключаем редактирование элементов
+                        if (this.config.mode === 'view') {
+                            this.disableEditing();
+                        } else {
+                            // В режиме редактирования инициализируем редактируемые поля
+                            this.initEditableFields();
+                        }
+                        
+                        this.logger.info('Все компоненты инициализированы');
+                    } catch (error) {
+                        this.logger.error('Ошибка при инициализации компонентов:', error);
+                    }
+                },
+                
+                /**
+                 * Инициализирует заглушку QR-кода в режиме редактирования
+                 */
+                initQrCodePlaceholder: function() {
+                    const qrcodeContainer = document.getElementById('qrcode');
+                    if (!qrcodeContainer) return;
+                    
+                    // Если мы в режиме редактирования, показываем заглушку
+                    if (this.config.mode === 'edit') {
+                        const placeholder = qrcodeContainer.querySelector('.qrcode-placeholder');
+                        if (placeholder) {
+                            placeholder.style.display = 'block';
+                            this.logger.info('QR-код заглушка активирована');
+                        }
+                    } else {
+                        // В режиме просмотра скрываем заглушку
+                        const placeholder = qrcodeContainer.querySelector('.qrcode-placeholder');
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
+                    }
+                },
+                
+                /**
+                 * Экспортирует основные функции в глобальную область видимости
+                 */
+                exportFunctions: function() {
+                    // Используем стрелочные функции для сохранения контекста
+                    window.initFaqAccordion = () => this.initAccordion();
+                    window.initTemplateDatePickers = () => this.initDatePickers();
+                    window.processTemplateLinks = () => this.processLinks();
+                    window.linkify = (text) => this.linkify(text);
+                    window.getSeriesData = () => this.getSeriesData();
+                },
+                
+                /**
+                 * Отключает редактирование элементов в режиме просмотра
+                 */
+                disableEditing: function() {
+                    const editableElements = document.querySelectorAll(this.config.selectors.editableElements);
+                    editableElements.forEach(elem => {
+                        elem.removeAttribute('contenteditable');
+                        
+                        // Для input-элементов заменяем их на обычный текст
+                        if (elem.tagName === 'INPUT') {
+                            const value = elem.value || elem.placeholder || '';
+                            const span = document.createElement('span');
+                            span.textContent = value;
+                            if (elem.parentNode) {
+                                elem.parentNode.replaceChild(span, elem);
+                            }
+                        }
+                    });
+                    this.logger.info('Редактирование элементов отключено');
+                },
+                
+                /**
+                 * Инициализирует редактируемые поля в режиме редактирования
+                 */
+                initEditableFields: function() {
+                    const self = this;
+                    const editableElements = document.querySelectorAll(this.config.selectors.editableElements);
+                    
+                    editableElements.forEach(elem => {
+                        // Не делаем редактируемыми те элементы, которые уже имеют свои обработчики
+                        if (elem.classList.contains('issue-date-s') || 
+                            elem.classList.contains('issue-date-do') ||
+                            elem.getAttribute('data-editable') === 'faq_answer_1') {
+                            return;
+                        }
+                        
+                        // Для input элементов уже есть базовая интерактивность
+                        if (elem.tagName !== 'INPUT') {
+                            elem.setAttribute('contenteditable', 'true');
+                        }
+                        
+                        // Добавляем обработчик фокуса для визуального эффекта
+                        elem.addEventListener('focus', function() {
+                            this.classList.add('editing');
+                        });
+                        
+                        // Убираем визуальный эффект при потере фокуса
+                        elem.addEventListener('blur', function() {
+                            this.classList.remove('editing');
+                        });
+                        
+                        // Обработка нажатий клавиш
+                        elem.addEventListener('keydown', function(e) {
+                            // Предотвращаем отправку формы по Enter
+                            if (e.key === 'Enter' && !e.shiftKey && elem.tagName !== 'TEXTAREA') {
+                                e.preventDefault();
+                                
+                                // Создаем событие blur для сохранения изменений
                                 setTimeout(() => {
-                                    const inputs = document.querySelectorAll('input.flatpickr-input');
-                                    inputs.forEach(input => {
-                                        input.style.display = 'none';
-                                        input.tabIndex = -1;
-                                    });
+                                    elem.blur();
                                 }, 10);
                             }
                         });
-
-                        // Перехватываем стандартное поведение и открываем календарь напрямую
-                        element.addEventListener('click', function (e) {
-                            e.preventDefault();
-                            fp.open();
-
-                            // Удаляем лишние input-элементы
-                            setTimeout(() => {
-                                const inputs = document.querySelectorAll('input.flatpickr-input');
-                                inputs.forEach(input => {
-                                    input.style.display = 'none';
-                                    input.tabIndex = -1;
-                                });
-                            }, 10);
-                        });
-
-                        return fp;
-                    }
-                }
-
-                // Инициализация календарей с учетом типа страницы
-                initFlatpickr('.issue-date-s', 'с: ');
-                initFlatpickr('.issue-date-do', 'до: ');
-
-                // Функция для преобразования текста в кликабельные ссылки
-                function linkify(text) {
-                    // Регулярные выражения для обнаружения различных типов ссылок
-                    const urlRegex = /(https?:\/\/[^\s]+)/g;
-                    const vkRegex = /(?:Вк|VK|ВКонтакте):\s*(https:\/\/vk\.com\/[^\s<]+)/gi;
-                    const telegramRegex = /(?:Телеграм|Telegram|тг):\s*@([^\s<]+)/gi;
-                    const whatsappRegex = /(?:WhatsApp|ВатсАп|вотсап):\s*\+([0-9]+)/gi;
-
-                    // Преобразование URL в ссылки
-                    text = text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
-
-                    // Преобразование ВК ссылок
-                    text = text.replace(vkRegex, 'Вк: <a href="$1" target="_blank">$1</a>');
-
-                    // Преобразование Telegram аккаунтов
-                    text = text.replace(telegramRegex, 'Телеграм: <a href="https://t.me/$1" target="_blank">@$1</a>');
-
-                    // Преобразование WhatsApp номеров
-                    text = text.replace(whatsappRegex, 'WhatsApp: <a href="https://wa.me/$1" target="_blank">+$1</a>');
-
-                    return text;
-                }
-
-                // Обработка элемента с контактной информацией
-                const faqAnswer = document.querySelector('[data-editable="faq_answer_1"]');
-                if (faqAnswer) {
-                    faqAnswer.innerHTML = linkify(faqAnswer.innerHTML);
-                    faqAnswer.classList.add('auto-links');
+                    });
                     
-                    // Делаем неактивным на странице просмотра
-                    if (isTemplateViewPage) {
-                        faqAnswer.removeAttribute('data-editable');
-                        faqAnswer.contentEditable = false;
+                    self.logger.info('Редактируемые поля инициализированы');
+                },
+                
+                /**
+                 * Инициализирует аккордеон для FAQ
+                 */
+                initAccordion: function() {
+                    const self = this;
+                    const faqQuestions = document.querySelectorAll(this.config.selectors.faqQuestion);
+                    
+                    this.logger.info(`Найдено ${faqQuestions.length} FAQ вопросов`);
+                    
+                    faqQuestions.forEach((question, index) => {
+                        // Проверяем, не инициализирован ли уже элемент
+                        if (question.getAttribute('data-init') === 'true') {
+                            return;
+                        }
+                        
+                        // Отмечаем как инициализированный
+                        question.setAttribute('data-init', 'true');
+                        
+                        question.addEventListener('click', (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            
+                            const faqItem = question.closest(self.config.selectors.faqItem);
+                            const answer = faqItem?.querySelector(self.config.selectors.faqAnswer);
+                            
+                            if (!answer) return;
+                            
+                            // Закрываем другие открытые FAQ
+                            document.querySelectorAll(`${self.config.selectors.faqItem}.active`).forEach(activeItem => {
+                                if (activeItem !== faqItem) {
+                                    activeItem.classList.remove('active');
+                                    const activeAnswer = activeItem.querySelector(self.config.selectors.faqAnswer);
+                                    if (activeAnswer) {
+                                        activeAnswer.style.maxHeight = '0';
+                                        activeAnswer.style.padding = '0 15px';
+                                    }
+                                }
+                            });
+                            
+                            // Переключаем состояние текущего FAQ
+                            const wasActive = faqItem.classList.contains('active');
+                            faqItem.classList.toggle('active');
+                            
+                            if (wasActive) {
+                                answer.style.maxHeight = '0';
+                                answer.style.padding = '0 15px';
+                            } else {
+                                answer.style.maxHeight = answer.scrollHeight + 'px';
+                                answer.style.padding = '0';
+                            }
+                            
+                            self.logger.info(`FAQ ${index} ${wasActive ? 'закрыт' : 'открыт'}`);
+                        });
+                        
+                        // Применяем начальное состояние, если FAQ активен
+                        const faqItem = question.closest(self.config.selectors.faqItem);
+                        if (faqItem && faqItem.classList.contains('active')) {
+                            const answer = faqItem.querySelector(self.config.selectors.faqAnswer);
+                            if (answer) {
+                                answer.style.maxHeight = answer.scrollHeight + 'px';
+                                answer.style.padding = '0';
+                            }
+                        }
+                    });
+                    
+                    this.logger.info('Аккордеон FAQ инициализирован');
+                },
+                
+                /**
+                 * Проверяет доступность библиотеки
+                 */
+                isLibraryAvailable: function(library) {
+                    if (library === 'flatpickr') {
+                        return typeof window.flatpickr === 'function';
                     }
-                }
-
-                // Очистка страницы от лишних input-элементов после полной загрузки
-                window.addEventListener('load', function () {
-                    const inputs = document.querySelectorAll('input.flatpickr-input');
-                    inputs.forEach(input => {
+                    return false;
+                },
+                
+                /**
+                 * Загружает flatpickr если его нет
+                 */
+                loadFlatpickr: function(callback) {
+                    if (this.isLibraryAvailable('flatpickr')) {
+                        callback();
+                        return;
+                    }
+                    
+                    // Загружаем CSS
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css';
+                    document.head.appendChild(link);
+                    
+                    // Загружаем JS
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/flatpickr';
+                    script.onload = () => {
+                        // Загружаем локализацию
+                        const localeScript = document.createElement('script');
+                        localeScript.src = 'https://npmcdn.com/flatpickr/dist/l10n/ru.js';
+                        localeScript.onload = callback;
+                        document.head.appendChild(localeScript);
+                    };
+                    document.head.appendChild(script);
+                },
+                
+                /**
+                 * Инициализирует выбор даты
+                 */
+                initDatePickers: function() {
+                    const self = this;
+                    
+                    // Если flatpickr не загружен, загружаем его и затем инициализируем пикеры
+                    if (!this.isLibraryAvailable('flatpickr')) {
+                        this.loadFlatpickr(() => {
+                            self.initDatePickersInternal();
+                        });
+                        return;
+                    }
+                    
+                    this.initDatePickersInternal();
+                },
+                
+                /**
+                 * Внутренний метод инициализации датапикеров
+                 */
+                initDatePickersInternal: function() {
+                    const self = this;
+                    const elements = {
+                        startDate: document.querySelectorAll(this.config.selectors.dateStart),
+                        endDate: document.querySelectorAll(this.config.selectors.dateEnd)
+                    };
+                    
+                    // Функция для инициализации flatpickr на элементе
+                    const initPicker = (element, prefix) => {
+                        // Если элемент уже инициализирован или мы в режиме просмотра, пропускаем
+                        if (self.config.mode === 'view' || element._flatpickr) {
+                            return;
+                        }
+                        
+                        try {
+                            // Извлекаем текущую дату из текстового содержимого
+                            let currentText = element.textContent?.trim() || '';
+                            let defaultDate = currentText.replace(/^(с: |до: )/, '');
+                            
+                            const fp = flatpickr(element, {
+                                locale: 'ru',
+                                dateFormat: 'd F Y г.',
+                                defaultDate: defaultDate || null,
+                                disableMobile: true,
+                                allowInput: false,
+                                appendTo: document.body,
+                                static: false,
+                                time_24hr: true,
+                                onChange: function(selectedDates, dateStr) {
+                                    if (!dateStr) return;
+                                    element.textContent = prefix + dateStr;
+                                    element.dataset.date = dateStr;
+                                },
+                                onOpen: function() {
+                                    element.classList.add('date-selecting');
+                                },
+                                onClose: function() {
+                                    element.classList.remove('date-selecting');
+                                }
+                            });
+                            
+                            // Отключаем стандартное редактирование
+                            element.contentEditable = false;
+                            
+                            // Добавляем обработчик клика для открытия календаря
+                            element.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (fp) fp.open();
+                            });
+                            
+                            self.logger.info('Датапикер инициализирован для', element);
+                        } catch (error) {
+                            self.logger.error('Ошибка инициализации датапикера:', error);
+                        }
+                    };
+                    
+                    // Инициализируем датапикеры для начальной и конечной даты
+                    elements.startDate.forEach(elem => initPicker(elem, 'с: '));
+                    elements.endDate.forEach(elem => initPicker(elem, 'до: '));
+                    
+                    // Скрываем лишние input-элементы, созданные flatpickr
+                    document.querySelectorAll('input.flatpickr-input').forEach(input => {
                         input.style.display = 'none';
                         input.tabIndex = -1;
                     });
-                });
+                    
+                    this.logger.info('Датапикеры инициализированы');
+                },
                 
-                // Делаем все поля нередактируемыми на странице просмотра
-                if (isTemplateViewPage) {
-                    // Находим все редактируемые элементы
-                    const editableElements = document.querySelectorAll('[data-editable]');
-                    editableElements.forEach(elem => {
-                        elem.removeAttribute('data-editable');
-                        elem.contentEditable = false;
+                /**
+                 * Обрабатывает ссылки в текстах
+                 */
+                processLinks: function() {
+                    const contactField = document.querySelector(this.config.selectors.contactField);
+                    if (!contactField) return;
+                    
+                    // Обрабатываем содержимое и применяем автоматические ссылки
+                    contactField.innerHTML = this.linkify(contactField.textContent || contactField.innerText);
+                    contactField.classList.add('auto-links', 'preserve-whitespace');
+                    
+                    // В режиме редактирования добавляем специальные обработчики
+                    if (this.config.mode === 'edit') {
+                        const self = this;
+                        
+                        contactField.addEventListener('focus', function() {
+                            this.dataset.originalContent = this.innerHTML;
+                            // Преобразуем HTML в текст для редактирования
+                            let plainText = this.innerHTML.replace(/<br\s*\/?>/gi, '\n');
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = plainText;
+                            plainText = tempDiv.textContent || tempDiv.innerText;
+                            this.textContent = plainText;
+                        });
+                        
+                        contactField.addEventListener('blur', function() {
+                            const rawText = this.textContent || '';
+                            // Используем метод для преобразования текста в ссылки
+                            this.innerHTML = self.linkify(rawText);
+                        });
+                        
+                        // Обработка Enter для создания новых строк
+                        contactField.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const selection = window.getSelection();
+                                const range = selection.getRangeAt(0);
+                                const textNode = document.createTextNode('\n');
+                                range.insertNode(textNode);
+                                range.setStartAfter(textNode);
+                                range.setEndAfter(textNode);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }
+                        });
+                    }
+                    
+                    this.logger.info('Ссылки в тексте обработаны');
+                },
+                
+                /**
+                 * Преобразует обычный текст в HTML с автоматическим определением ссылок
+                 */
+                linkify: function(text) {
+                    if (!text) return '';
+                    
+                    // Очищаем текст от существующих HTML-тегов
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = text;
+                    let cleanText = tempDiv.textContent || tempDiv.innerText;
+                    
+                    // Заменяем все переносы строк на <br>
+                    cleanText = cleanText.replace(/\n/g, '<br>');
+                    
+                    // Паттерны для обнаружения разных типов ссылок
+                    const patterns = {
+                        url: /(https?:\/\/[^\s<]+)|(?<=\s|^)(www\.[^\s<]+)/g,
+                        email: /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/g,
+                        vk: /(?:(?:Вконтакте|Vkontakte|VK|ВК|Вк):?\s*)(?:(https?:\/\/(?:vk\.com|m\.vk\.com)\/[^\s<]+)|@?([a-zA-Z0-9._]+))/gi,
+                        telegram: /(?:(?:Телеграм|Telegram|тг|телега):?\s*)(?:(https?:\/\/t\.me\/[^\s<]+)|@([a-zA-Z0-9._]+))/gi,
+                        whatsapp: /(?:(?:WhatsApp|ВатсАп|вотсап):?\s*)(?:(https?:\/\/(?:wa\.me|api\.whatsapp\.com\/send)\?[^\s<]+)|(?:\+([0-9]+)))/gi,
+                        phone: /(?:(?:тел(?:ефон)?|tel|phone|номер):?\s*)?(?:\+7|8)[- ]?\(?(\d{3})\)?[- ]?(\d{3})[- ]?(\d{2})[- ]?(\d{2})/g,
+                        viber: /(?:(?:Viber|Вайбер):?\s*)(?:(https?:\/\/(?:viber|vb)\.me\/[^\s<]+)|(?:\+([0-9]+)))/gi,
+                        instagram: /(?:(?:Instagram|Инстаграм|инста|Threads|Тредс):?\s*)(?:(https?:\/\/(?:www\.)?instagram\.com\/[^\s<]+)|@([a-zA-Z0-9._]+))/gi,
+                    };
+                    
+                    // Функция для форматирования телефонного номера
+                    const formatPhone = (match, p1, p2, p3, p4) => {
+                        const cleaned = (p1 || '') + (p2 || '') + (p3 || '') + (p4 || '');
+                        if (cleaned.length !== 10) return match;
+                        
+                        const formatted = `+7 (${p1}) ${p2}-${p3}-${p4}`;
+                        const phoneUrl = `tel:+7${p1}${p2}${p3}${p4}`;
+                        return `<a href="${phoneUrl}" class="phone-link">${formatted}</a>`;
+                    };
+                    
+                    // Обрабатываем телефонные номера (приоритет)
+                    cleanText = cleanText.replace(/(?:\+7|8)[- ]?\(?(\d{3})\)?[- ]?(\d{3})[- ]?(\d{2})[- ]?(\d{2})/g, formatPhone);
+                    
+                    // Обрабатываем URL
+                    cleanText = cleanText.replace(patterns.url, function(match) {
+                        const url = match.startsWith('www.') ? 'https://' + match : match;
+                        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${match}</a>`;
                     });
                     
-                    // Преобразуем input-поля для серии в обычный текст
-                    const seriesInputs = document.querySelectorAll('.certificate-series-info input');
-                    seriesInputs.forEach(input => {
-                        const value = input.value || input.placeholder;
-                        const span = document.createElement('span');
-                        span.textContent = value;
-                        input.parentNode.replaceChild(span, input);
+                    // Обрабатываем email
+                    cleanText = cleanText.replace(patterns.email, '<a href="mailto:$1" class="email-link">$1</a>');
+                    
+                    // Обрабатываем ВКонтакте
+                    cleanText = cleanText.replace(patterns.vk, function(match, url, username) {
+                        if (url) return `ВКонтакте: <a href="${url}" target="_blank" class="social-link vk-link">${url}</a>`;
+                        if (username) {
+                            const vkUrl = `https://vk.com/${username.replace('@', '')}`;
+                            return `ВКонтакте: <a href="${vkUrl}" target="_blank" class="social-link vk-link">@${username.replace('@', '')}</a>`;
+                        }
+                        return match;
                     });
+                    
+                    // Обрабатываем Telegram
+                    cleanText = cleanText.replace(patterns.telegram, function(match, url, username) {
+                        if (url) return `Telegram: <a href="${url}" target="_blank" class="social-link telegram-link">${url}</a>`;
+                        if (username) {
+                            const tgUrl = `https://t.me/${username.replace('@', '')}`;
+                            return `Telegram: <a href="${tgUrl}" target="_blank" class="social-link telegram-link">@${username.replace('@', '')}</a>`;
+                        }
+                        return match;
+                    });
+                    
+                    // Обрабатываем WhatsApp
+                    cleanText = cleanText.replace(patterns.whatsapp, function(match, url, phone) {
+                        if (url) return `WhatsApp: <a href="${url}" target="_blank" class="social-link whatsapp-link">${url}</a>`;
+                        if (phone) {
+                            const waUrl = `https://wa.me/${phone}`;
+                            return `WhatsApp: <a href="${waUrl}" target="_blank" class="social-link whatsapp-link">+${phone}</a>`;
+                        }
+                        return match;
+                    });
+                    
+                    // Обрабатываем Viber
+                    cleanText = cleanText.replace(patterns.viber, function(match, url, phone) {
+                        if (url) return `Viber: <a href="${url}" target="_blank" class="social-link viber-link">${url}</a>`;
+                        if (phone) {
+                            const viberUrl = `viber://chat?number=${phone}`;
+                            return `Viber: <a href="${viberUrl}" class="social-link viber-link">+${phone}</a>`;
+                        }
+                        return match;
+                    });
+                    
+                    // Обрабатываем Instagram
+                    cleanText = cleanText.replace(patterns.instagram, function(match, url, username) {
+                        if (url) return `Instagram: <a href="${url}" target="_blank" class="social-link instagram-link">${url}</a>`;
+                        if (username) {
+                            const instaUrl = `https://www.instagram.com/${username.replace('@', '')}`;
+                            return `Instagram: <a href="${instaUrl}" target="_blank" class="social-link instagram-link">@${username.replace('@', '')}</a>`;
+                        }
+                        return match;
+                    });
+                    
+                    return cleanText;
+                },
+                
+                /**
+                 * Получает данные о серии из шаблона
+                 */
+                getSeriesData: function() {
+                    // Получаем элементы серии
+                    const quantityElem = document.querySelector(this.config.selectors.seriesQuantity);
+                    const receivedElem = document.querySelector(this.config.selectors.seriesReceived);
+                    const scanCountElem = document.querySelector(this.config.selectors.scanCount);
+                    const requiredScansElem = document.querySelector(this.config.selectors.requiredScans);
+                    
+                    // Получаем значения (для input учитываем value, для других элементов - текст)
+                    const getValue = (elem) => {
+                        if (!elem) return null;
+                        
+                        if (elem.tagName === 'INPUT') {
+                            return parseInt(elem.value || elem.placeholder || '0', 10) || 0;
+                        }
+                        
+                        const text = elem.textContent.trim();
+                        return parseInt(text || '0', 10) || 0;
+                    };
+                    
+                    // Собираем данные
+                    const seriesData = {
+                        series_quantity: Math.max(1, getValue(quantityElem)), // Минимум 1
+                        series_received: getValue(receivedElem) || 0,
+                        scan_count: getValue(scanCountElem) || 0,
+                        required_scans: Math.max(1, getValue(requiredScansElem)) // Минимум 1
+                    };
+                    
+                    // Определяем, является ли шаблон серией
+                    seriesData.is_series = seriesData.series_quantity > 1;
+                    
+                    this.logger.info('Получены данные о серии:', seriesData);
+                    return seriesData;
                 }
+            };
+            
+            // Автоматическая инициализация при загрузке документа
+            document.addEventListener('DOMContentLoaded', function() {
+                // Инициализируем с параметрами по умолчанию
+                window.TemplateJS.init({
+                    debug: true // Включаем отладочные сообщения
+                });
+                
+                console.log('TemplateJS инициализирован автоматически при загрузке страницы');
             });
+            
+            // Инициализация при немедленной загрузке JavaScript
+            if (document.readyState === 'interactive' || document.readyState === 'complete') {
+                setTimeout(function() {
+                    if (window.TemplateJS && !window.TemplateJS.initialized) {
+                        window.TemplateJS.init({
+                            debug: true
+                        });
+                        window.TemplateJS.initialized = true;
+                        console.log('TemplateJS инициализирован немедленно');
+                    }
+                }, 0);
+            }
+        })();
         </script>
+
     </div>
 
-    <!-- Добавляем скрипт для раскрытия FAQ -->
+    <!-- Добавляем стили для заглушки QR-кода -->
+    <style>
+        /* Стили для заглушки QR-кода */
+        .qrcode-placeholder {
+            width: 100%;
+            height: 100%;
+            border: 2px dashed #ccc;
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #888;
+            border-radius: 4px;
+            min-height: 160px;
+        }
+    </style>
+
+    <!-- Дополнительный скрипт для немедленной инициализации -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Находим все элементы FAQ-вопросов
-            const faqQuestions = document.querySelectorAll('.faq-question');
-
-            // Добавляем обработчик события для каждого вопроса
-            faqQuestions.forEach(function (question) {
-                question.addEventListener('click', function () {
-                    // Находим следующий элемент (ответ)
-                    const answer = this.nextElementSibling;
-
-                    // Переключаем класс active для вопроса
-                    this.classList.toggle('active');
-
-                    // Если ответ отображается, скрываем его
-                    if (answer.style.maxHeight) {
-                        answer.style.maxHeight = null;
-                    } else {
-                        // Иначе показываем, устанавливая максимальную высоту
-                        answer.style.maxHeight = answer.scrollHeight + "px";
-                    }
-                });
+    // Инициализируем TemplateJS сразу, если DOM уже загружен
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        if (window.TemplateJS && typeof window.TemplateJS.init === 'function' && !window.TemplateJS.initialized) {
+            window.TemplateJS.init({
+                debug: true
             });
-        });
+            window.TemplateJS.initialized = true;
+            console.log('TemplateJS инициализирован из внешнего скрипта');
+        }
+    }
     </script>
 </body>
 

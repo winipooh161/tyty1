@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\AcquiredTemplate;
+use App\Models\AcquiredTemplateFolder;
 
 class HomeController extends Controller
 {
@@ -31,11 +32,13 @@ class HomeController extends Controller
             ->latest('acquired_at') // Возвращаем сортировку по acquired_at после успешной миграции
             ->get();
 
-        // Загружаем папки для полученных шаблонов
-        $acquiredFolders = Auth::user()->acquiredTemplateFolders()
-            ->orderBy('display_order')
-            ->get();
-
-        return view('home', compact('acquiredTemplates', 'acquiredFolders'));
+        // Получаем папки для приобретенных шаблонов
+        $acquiredFolders = AcquiredTemplateFolder::where('user_id', auth()->id())->get();
+        
+        // Добавляем диагностическую информацию для отладки
+        $acquiredTemplatesCount = auth()->user()->acquiredTemplates()->count();
+        $userTemplatesCount = auth()->user()->templates()->count();
+        
+        return view('home', compact('acquiredTemplates', 'acquiredFolders', 'acquiredTemplatesCount', 'userTemplatesCount'));
     }
 }

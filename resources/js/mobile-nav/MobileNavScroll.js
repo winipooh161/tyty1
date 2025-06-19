@@ -201,10 +201,20 @@ export class MobileNavScroll {
         }, this.inactivityThreshold);
     }
     
-    // Скрытие навигационной панели
+    // Скрытие навигационной панели с проверкой пути
     hideNavigation() {
         const navigation = document.querySelector('.mb-navigation');
         if (!navigation || this.isNavigationHidden) return;
+
+        // Проверяем текущий путь - на страницах редактора не скрываем навигацию
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('/templates/create-new/') || 
+            currentPath.includes('/templates/editor') || 
+            currentPath.includes('/client/templates/create-new/') || 
+            currentPath.includes('/client/templates/editor')) {
+            console.log('Скрытие навигации пропущено на странице редактора');
+            return;
+        }
         
         // Применяем RAF для более плавной анимации
         requestAnimationFrame(() => {

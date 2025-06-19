@@ -1,0 +1,88 @@
+/* Стили для редактора медиа */
+
+/* Основной контейнер */
+.media-editor-container {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Секция загрузки */
+.media-upload-section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: white;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+/* Кнопка загрузки */
+#uploadBtn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    border-radius: 30px;
+    min-width: 200px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+#uploadBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+#uploadBtn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для области drag-n-drop */
+.media-editor-container.highlight::after {
+    content: "Отпустите файл для загрузки";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 123, 255, 0.9);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-weight: bold;
+    z-index: 100;
+}
+
+/* Стили для отключения скрытия секции загрузки */
+.force-show {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 99 !important;
+}
+
+/* Кнопка сброса и выбора нового файла */
+.reset-button-container {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 20;
+}
+
+/* Стили для адаптивности */
+@media (max-width: 768px) {
+    #uploadBtn {
+        min-width: 160px;
+        padding: 0.6rem 1.2rem;
+    }
+    
+    .media-upload-section i.bi-cloud-upload {
+        font-size: 4rem;
+    }
+}

@@ -21,6 +21,8 @@ class AcquiredTemplate extends Model
         'status_changed_at', // Добавляем поле в fillable
         'folder_id',         // ID папки, в которой находится шаблон
         'acquired_at',       // Добавляем поле acquired_at в fillable
+        'scans_count',       // Количество сканов
+        'is_series'          // Является ли шаблон серийным
     ];
 
     /**

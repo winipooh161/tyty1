@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+
 
     <!-- Отображение полученных шаблонов в стиле страницы my-templates -->
     @php
@@ -19,11 +19,7 @@
     @endif
     
     @if($acquiredTemplates->count() > 0)
-    <div class="row mb-4">
-        <div class="col-12">
-            <h4>Коллекция</h4>
-               </div>
-    </div>
+   
     
     <!-- Навигация по вкладкам -->
     <ul class="nav nav-tabs card-header-tabs mb-3" id="templateTabs" role="tablist">
@@ -340,15 +336,18 @@
                             @endif
                         @endforeach
                     @else
-                        <div class="col-12">
-                            <div class="empty-folder text-center">
-                                <div class="empty-folder-icon">
-                                    <i class="bi bi-folder2-open"></i>
+                        <!-- Пустые карточки вместо сообщения о пустой папке -->
+                        @for($i = 0; $i < 12; $i++)
+                        <div class="col-4">
+                            <div class="card h-100 template-card empty-template-card">
+                                <div class="card-img-top template-preview empty-preview">
+                                    <div class="empty-card-content">
+                                        <!-- Пустая карточка -->
+                                    </div>
                                 </div>
-                                <h4 class="text-muted">Папка пуста</h4>
-                                <p>Перетащите шаблоны в эту папку, нажав на значок <i class="bi bi-folder-symlink"></i></p>
                             </div>
                         </div>
+                        @endfor
                     @endif
                 </div>
             </div>
@@ -368,7 +367,7 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="folder-name" class="form-label">Название папки</label>
-                            <input type="text" class="form-control" id="folder-name" name="name" required>
+                            <input type="text" class="form-control" id="folder-name" name="name" maxlength="55" required>
                         </div>
                         {{-- <div class="mb-3">
                             <label for="folder-color" class="form-label">Цвет папки</label>
@@ -406,7 +405,7 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="edit-folder-name" class="form-label">Название папки</label>
-                            <input type="text" class="form-control" id="edit-folder-name" name="name" required>
+                            <input type="text" class="form-control" id="edit-folder-name" name="name"  maxlength="55" required>
                         </div>
                         {{-- <div class="mb-3">
                             <label for="edit-folder-color" class="form-label">Цвет папки</label>
@@ -496,82 +495,186 @@
     </div>
     
     <style>
-        /* Стилизация видео в карточках */
-        .template-preview video {
-            width: 100%;
+    /* Стилизация видео в карточках */
+    .template-preview video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    
+    /* Стилизация пустого списка */
+    .empty-folder {
+        text-align: center;
+        padding: 40px 0;
+    }
+    
+    .empty-folder-icon {
+        font-size: 4rem;
+        color: #d1d9e6;
+        margin-bottom: 15px;
+    }
+    
+    /* Стили для владельца шаблона */
+    .template-owner {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        z-index: 2;
+    }
+    
+    .template-owner .badge {
+        font-size: 10px;
+        font-weight: normal;
+        padding: 4px 8px;
+        border-radius: 10px;
+        opacity: 0.9;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+    }
+    
+    /* Стили для индикатора папки */
+    .template-folder-indicator {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        z-index: 2;
+    }
+    
+    .template-folder-indicator .badge {
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        opacity: 0.9;
+    }
+    
+    /* Стили для пустых карточек */
+    .empty-template-card {
+     
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+    }
+    
+    .empty-preview {
+        background-color: #ffffff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 150px;
+    }
+    
+    .empty-card-content {
+        width: 100%;
+        height: 100%;
+        background-color: transparent;
+    }
+    
+    /* Убираем эффект hover для пустых карточек */
+    .empty-template-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    /* Обновленные стили карточек */
+    .template-card {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .template-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    .template-preview {
+        aspect-ratio: 16/9;
+        background-color: #f8f9fa;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Стили для статусных индикаторов */
+    .status-badge {
+        padding: 4px 6px;
+        border-radius: 50%;
+        font-size: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Адаптивные стили для вкладок */
+    .nav-tabs {
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        color: #6c757d;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-tabs .nav-link.active {
+        border-bottom: 2px solid #6c8aec;
+        color: #6c8aec;
+        background-color: transparent;
+    }
+    
+    .nav-tabs .nav-link:hover:not(.active) {
+        border-color: rgba(108, 138, 236, 0.2);
+    }
+    
+    @media (max-width: 767px) {
+        .tab-text {
+            display: none;
+        }
+        
+        .nav-link .bi {
+            margin-right: 0 !important;
+            font-size: 1.2rem;
+        }
+        
+        .nav-item {
+            margin: 0 2px;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 0.4rem 0.6rem;
+        }
+        
+        .folder-tab .dropdown {
+            margin-left: 5px !important;
+        }
+        
+        .template-card {
+          
+        }
+        
+        /* Улучшаем стили модальных окон на мобильных устройствах */
+        .modal-dialog {
+            margin: 0;
+            max-width: 100%;
             height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
         }
         
-        /* Стилизация пустого списка */
-        .empty-folder {
-            text-align: center;
-            padding: 40px 0;
+        .modal-content {
+            height: 100%;
+            border-radius: 0;
+            border: none;
         }
-        
-        .empty-folder-icon {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 15px;
-        }
-        
-        /* Стили для владельца шаблона */
-        .template-owner {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            z-index: 2;
-        }
-        
-        .template-owner .badge {
-            font-size: 10px;
-            font-weight: normal;
-            padding: 4px 8px;
-            border-radius: 10px;
-            opacity: 0.9;
-        }
-        
-        /* Стили для индикатора папки */
-        .template-folder-indicator {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            z-index: 2;
-        }
-        
-        .template-folder-indicator .badge {
-            font-size: 10px;
-            padding: 4px 8px;
-            border-radius: 10px;
-            opacity: 0.9;
-        }
-        
-        /* Адаптивные стили для вкладок */
-        @media (max-width: 767px) {
-            .tab-text {
-                display: none;
-            }
-            
-            .nav-link .bi {
-                margin-right: 0 !important;
-                font-size: 1rem;
-            }
-            
-            .nav-item {
-                margin: 0 2px;
-            }
-            
-            .nav-tabs .nav-link {
-                padding: 0.2rem 0.5rem;
-            }
-            
-            .folder-tab .dropdown {
-                margin-left: 5px !important;
-            }
-        }
+    }
     </style>
     
     <script>
@@ -644,10 +747,20 @@
         });
     </script>
     @else
-        <div class="alert alert-info">
-            У вас пока нет полученных шаблонов.
+        <!-- Пустые карточки вместо сообщения о пустом списке -->
+        <div class="row g-2">
+            @for($i = 0; $i < 12; $i++)
+            <div class="col-4">
+                <div class="card h-100 template-card empty-template-card">
+                    <div class="card-img-top template-preview empty-preview">
+                        <div class="empty-card-content">
+                            <!-- Пустая карточка -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endfor
         </div>
     @endif
-</div>
- 
+
 @endsection

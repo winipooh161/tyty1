@@ -11,14 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const processingIndicator = document.getElementById('processingIndicator');
     const editorContainer = document.querySelector('.media-editor-container');
     
-    // ИСПРАВЛЕНИЕ: Определяем CSRF-токен в начале скрипта
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    
-    // Проверяем доступность CSRF-токена
-    if (!csrfToken) {
-        console.error('CSRF-токен не найден. Добавьте meta[name="csrf-token"] в шаблон.');
-    }
-    
     // Элементы для редактирования изображений
     const imagePreview = document.getElementById('imagePreview');
     const imageViewport = document.getElementById('imageViewport');
@@ -120,21 +112,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Секция загрузки скрыта, редактор активирован');
     }
     
-    // Инициализация редактора - исправляем дублирование событий
+    // Инициализация редактора
     function init() {
-        // Удаляем все существующие обработчики событий с кнопки
-        uploadBtn.removeEventListener('click', handleUploadButtonClick);
-        
-        // Добавляем один обработчик события
-        uploadBtn.addEventListener('click', handleUploadButtonClick);
-        
-        // Удаляем старые события с input[file]
-        mediaFile.removeEventListener('change', handleFileSelect);
-        // Добавляем новый обработчик
+        // Обработчики событий для кнопок
+        uploadBtn.addEventListener('click', () => mediaFile.click());
         mediaFile.addEventListener('change', handleFileSelect);
-        
-        // Обработчик для кнопки сохранения
-        saveBtn.removeEventListener('click', processMedia);
         saveBtn.addEventListener('click', processMedia);
         
         // Добавляем поддержку drag-n-drop для загрузки файла
@@ -148,12 +130,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (mbNavigation) {
             mbNavigation.style.display = 'none';
         }
-    }
-    
-    // Функция-обработчик для кнопки загрузки - фиксим дублирование диалога
-    function handleUploadButtonClick(e) {
-        e.stopPropagation(); // Предотвращаем всплытие события
-        mediaFile.click();
     }
     
     // Настройка drag-n-drop для загрузки файлов
@@ -323,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
         imagePreview.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px) scale(${currentScale}) rotate(${currentRotation}deg)`;
     }
     
-    // Настройка видео-редактора с мобильными элементами управления - ИСПРАВЛЕНО
+    // Настройка видео-редактора с мобильными элементами управления
     function setupVideoEditor() {
         // Обработчик события загрузки метаданных видео
         videoPreview.addEventListener('loadedmetadata', function() {
@@ -347,55 +323,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Обновляем прогресс-бар
             updateProgressBar();
-            
-            // Выводим информацию о длительности в консоль для отладки
-            console.debug("Видео загружено. Длительность:", videoDuration, "Начало:", videoStartTime, "Конец:", videoEndTime);
         });
         
         // События видеоплеера
         videoPreview.addEventListener('timeupdate', function() {
             // Если видео проигрывается и вышло за пределы выбранного диапазона,
-            // останавливаем воспроизведение или перематываем на начало выбранного фрагмента
-            if (this.currentTime < videoStartTime) {
+            // останавливаем воспроизведение
+            if (isPlaying && (this.currentTime < videoStartTime || this.currentTime >= videoEndTime)) {
+                this.pause();
                 this.currentTime = videoStartTime;
-            } else if (this.currentTime >= videoEndTime) {
-                if (isPlaying) {
-                    this.pause();
-                    isPlaying = false;
-                    this.currentTime = videoStartTime;  // Перематываем на начало фрагмента
-                }
+                isPlaying = false;
             }
         });
-        
-        // Добавляем кнопку воспроизведения/паузы выбранного фрагмента
-        if (!document.getElementById('videoPlayButton')) {
-            const playButton = document.createElement('button');
-            playButton.id = 'videoPlayButton';
-            playButton.className = 'btn btn-primary btn-sm position-absolute';
-            playButton.style.bottom = '60px';
-            playButton.style.right = '20px';
-            playButton.style.zIndex = '10';
-            playButton.innerHTML = '<i class="bi bi-play-fill"></i> Воспроизвести';
-            
-            videoPreview.parentNode.appendChild(playButton);
-            
-            playButton.addEventListener('click', function() {
-                if (isPlaying) {
-                    videoPreview.pause();
-                    isPlaying = false;
-                    this.innerHTML = '<i class="bi bi-play-fill"></i> Воспроизвести';
-                } else {
-                    // Устанавливаем текущее время видео и воспроизводим
-                    videoPreview.currentTime = videoStartTime;
-                    videoPreview.play().then(() => {
-                        isPlaying = true;
-                        this.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
-                    }).catch(err => {
-                        console.error('Ошибка воспроизведения:', err);
-                    });
-                }
-            });
-        }
     }
     
     // Функция для обновления прогресс-бара видео
@@ -424,31 +363,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const rangeTrack = document.querySelector('.mobile-range-track');
         if (!rangeTrack) return;
         
-        // Обновление положения ползунков - ИСПРАВЛЕНО
+        // Обновление положения ползунков
         function updateHandles() {
-            if (!videoDuration || !isFinite(videoDuration) || videoDuration <= 0) {
-                console.warn("Невозможно обновить положение ползунков: некорректная длительность видео");
-                return;
-            }
+            if (!videoDuration) return;
             
             trackRect = rangeTrack.getBoundingClientRect();
-            
-            // Проверяем и нормализуем значения времени
-            if (!isFinite(videoStartTime) || videoStartTime < 0) videoStartTime = 0;
-            if (!isFinite(videoEndTime) || videoEndTime <= videoStartTime) 
-                videoEndTime = Math.min(videoStartTime + 15, videoDuration);
-            
-            // Гарантируем, что конечное время не превышает длительность
-            videoEndTime = Math.min(videoEndTime, videoDuration);
             
             // Вычисляем позиции ручек в процентах
             const startPercent = (videoStartTime / videoDuration) * 100;
             const endPercent = (videoEndTime / videoDuration) * 100;
-            
-            console.log("Обновление положения ползунков:", 
-                "Начало:", videoStartTime.toFixed(1), "с", `(${startPercent.toFixed(1)}%)`, 
-                "Конец:", videoEndTime.toFixed(1), "с", `(${endPercent.toFixed(1)}%)`,
-                "Длительность видео:", videoDuration.toFixed(1), "с");
             
             // Устанавливаем положение ручек
             mobileStartHandle.style.left = startPercent + '%';
@@ -457,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Обновляем прогресс-бар
             updateProgressBar();
         }
-
+        
         // Обработчики для начальной ручки
         mobileStartHandle.addEventListener('mousedown', function(e) {
             e.preventDefault();
@@ -506,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Обновление позиции при перетаскивании - ИСПРАВЛЕНО
+        // Обновление позиции при перетаскивании
         function updateDragPosition(clientX) {
             // Обновляем прямоугольник трека
             trackRect = rangeTrack.getBoundingClientRect();
@@ -519,29 +442,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Вычисляем время на видео
             const time = relativePosition * videoDuration;
             
-            // DEBUG: Выводим текущую позицию для отладки
-            console.debug("Перемещение ползунка:", 
-                "Позиция курсора:", clientX, 
-                "Трек:", `${trackRect.left}-${trackRect.right}`, 
-                "Относительная позиция:", relativePosition.toFixed(3), 
-                "Время:", time.toFixed(2));
-            
-            // Устанавливаем новое время в зависимости от передвигаемой ручки
             if (isDraggingStart) {
                 // Обновляем начальное время с минимальным допустимым интервалом 0.5 секунд
-                const newStartTime = Math.min(videoEndTime - 0.5, time);
-                if (newStartTime !== videoStartTime) {
-                    videoStartTime = newStartTime;
-                    console.log("Обновлено начальное время:", videoStartTime.toFixed(2));
-                }
+                videoStartTime = Math.min(videoEndTime - 0.5, time);
             } else if (isDraggingEnd) {
                 // Обновляем конечное время с максимальной длительностью 15 секунд
                 const maxEndTime = Math.min(videoDuration, videoStartTime + 15);
-                const newEndTime = Math.min(maxEndTime, Math.max(videoStartTime + 0.5, time));
-                if (newEndTime !== videoEndTime) {
-                    videoEndTime = newEndTime;
-                    console.log("Обновлено конечное время:", videoEndTime.toFixed(2));
-                }
+                videoEndTime = Math.min(maxEndTime, Math.max(videoStartTime + 0.5, time));
             }
             
             // Обновляем ручки и прогресс
@@ -572,39 +479,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.removeEventListener('touchend', handleTouchEnd);
         }
         
-        // Добавляем индикацию выбранного интервала
-        function updateTimeIndicator() {
-            if (!videoDuration) return;
-            
-            // Создаем или обновляем элемент для отображения времени
-            let timeIndicator = document.getElementById('timeRangeIndicator');
-            if (!timeIndicator) {
-                timeIndicator = document.createElement('div');
-                timeIndicator.id = 'timeRangeIndicator';
-                timeIndicator.style.position = 'absolute';
-                timeIndicator.style.bottom = '62px';
-                timeIndicator.style.left = '50%';
-                timeIndicator.style.transform = 'translateX(-50%)';
-                timeIndicator.style.background = 'rgba(0,0,0,0.7)';
-                timeIndicator.style.color = 'white';
-                timeIndicator.style.padding = '5px 10px';
-                timeIndicator.style.borderRadius = '4px';
-                timeIndicator.style.fontSize = '14px';
-                timeIndicator.style.fontWeight = 'bold';
-                timeIndicator.style.zIndex = '100';
-                rangeTrack.parentNode.appendChild(timeIndicator);
-            }
-            
-            // Рассчитываем и отображаем интервал
-            const duration = videoEndTime - videoStartTime;
-            timeIndicator.textContent = `${videoStartTime.toFixed(1)}с - ${videoEndTime.toFixed(1)}с (${duration.toFixed(1)}с)`;
-        }
-        
-        // Обновляем индикацию при изменении и инициализации
-        updateTimeIndicator();
-        rangeTrack.addEventListener('mouseup', updateTimeIndicator);
-        rangeTrack.addEventListener('touchend', updateTimeIndicator);
-    }
+        // Инициализируем положение ручек
+        updateHandles();
+    } // Добавлена закрывающая скобка для функции setupMobileTrimControls
     
     // Сброс редактора
     function resetEditor() {
@@ -664,195 +541,87 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('crop_data', JSON.stringify(cropData));
         }
         
-        // ИСПРАВЛЕНО: Улучшенная обработка параметров обрезки для видео
+        // Добавляем данные о обрезке для видео
         if (fileType === 'video') {
-            // Выводим отладочную информацию
-            console.log("Отправка параметров видео:", {
-                videoDuration,
-                videoStartTime,
-                videoEndTime,
-                выбранный_интервал: `${videoStartTime.toFixed(1)}с - ${videoEndTime.toFixed(1)}с`,
-                длительность_интервала: (videoEndTime - videoStartTime).toFixed(1) + "с"
-            });
-            
-            // Проверяем, что значения корректны и видео загружено
-            if (isFinite(videoStartTime) && isFinite(videoEndTime) && isFinite(videoDuration) && videoDuration > 0) {
-                // Гарантируем, что значения находятся в допустимых пределах
-                const startTime = Math.max(0, Math.min(videoDuration - 0.5, videoStartTime));
-                const endTime = Math.max(startTime + 0.5, Math.min(videoDuration, videoEndTime));
-                
-                // Добавляем параметры с фиксированной точностью (3 десятичных знака)
-                formData.append('video_start', startTime.toFixed(3));
-                formData.append('video_end', endTime.toFixed(3));
-                
-                // Добавляем дополнительный параметр с длительностью для отладки
-                formData.append('video_clip_duration', (endTime - startTime).toFixed(3));
-                
-                console.log(`Отправка окончательных параметров обрезки: начало=${startTime.toFixed(3)}, конец=${endTime.toFixed(3)}, длит.=${(endTime - startTime).toFixed(3)}`);
-                
-                // Добавляем параметр качества
-                if (currentFile.size > 10 * 1024 * 1024) {
-                    formData.append('quality', 'small');
-                    console.log('Установлено низкое качество для большого файла: ' + Math.round(currentFile.size / (1024 * 1024)) + 'MB');
-                } else {
-                    formData.append('quality', 'medium');
-                }
-            } else {
-                console.warn('Некорректные значения времени обрезки или длительности видео:', {
-                    videoStartTime,
-                    videoEndTime,
-                    videoDuration
-                });
-                
-                // Значения по умолчанию (без обрезки)
-                formData.append('video_start', '0');
-                formData.append('video_end', Math.min(15, videoDuration || 15).toString());
-            }
-        }
-        
-        // Отображаем дополнительную информацию для пользователя
-        const infoText = document.createElement('p');
-        infoText.className = 'text-center mt-2';
-        
-        if (fileType === 'video') {
+            // Проверяем, что значения корректны
             if (isFinite(videoStartTime) && isFinite(videoEndTime)) {
-                const clipDuration = videoEndTime - videoStartTime;
-                infoText.textContent = `Обрабатываем видео: ${clipDuration.toFixed(1)}с (${videoStartTime.toFixed(1)}с - ${videoEndTime.toFixed(1)}с)`;
+                // Округляем значения до 2 знаков после запятой для точности
+                const startTime = Math.max(0, Math.round(videoStartTime * 100) / 100);
+                const endTime = Math.min(videoDuration || 15, Math.round(videoEndTime * 100) / 100);
+                
+                console.log(`Отправляем время обрезки видео: ${startTime} - ${endTime}`);
+                formData.append('video_start', startTime.toString());
+                formData.append('video_end', endTime.toString());
             } else {
-                infoText.textContent = 'Обрабатываем видео. Это может занять некоторое время...';
+                console.warn('Некорректные значения времени обрезки:', videoStartTime, videoEndTime);
+                // Установим значения по умолчанию
+                formData.append('video_start', '0');
+                formData.append('video_end', '15');
             }
-        } else {
-            infoText.textContent = 'Обрабатываем изображение...';
         }
         
-        document.querySelector('.spinner-border').parentNode.appendChild(infoText);
+        // Получаем CSRF токен из meta тега
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        // ИСПРАВЛЕНИЕ: Добавляем проверку CSRF токена перед отправкой
-        if (!csrfToken) {
-            // Показываем ошибку, если токен не найден
+        // Отправляем запрос на сервер
+        fetch('<?php echo e(route("media.process")); ?>', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Проверяем тип содержимого ответа
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.indexOf('application/json') !== -1) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Ошибка сервера: ' + response.status);
+                    });
+                }
+                throw new Error('Ошибка сервера: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                console.log('Файл успешно обработан:', data);
+                // После успешной обработки перенаправляем пользователя
+                window.location.href = data.redirect_url;
+            } else {
+                throw new Error(data.error || 'Неизвестная ошибка');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при отправке запроса:', error);
+            
+            // Показываем подробную информацию об ошибке
             processingIndicator.style.display = 'none';
             
             const errorDiv = document.createElement('div');
             errorDiv.className = 'alert alert-danger position-fixed bottom-0 start-0 end-0 m-3';
             errorDiv.innerHTML = `
-                <h5 class="alert-heading">Ошибка безопасности</h5>
-                <p>CSRF-токен не найден. Обновите страницу или обратитесь к администратору.</p>
-                <button type="button" class="btn btn-primary btn-sm mt-2" onclick="window.location.reload()">
-                    <i class="bi bi-arrow-repeat me-1"></i> Обновить страницу
+                <h5 class="alert-heading">Ошибка при обработке файла</h5>
+                <p>${error.message || 'Неизвестная ошибка'}</p>
+                <button type="button" class="btn btn-primary btn-sm mt-2" id="tryAgainBtn">
+                    <i class="bi bi-arrow-repeat me-1"></i> Повторить
                 </button>
             `;
             
             document.body.appendChild(errorDiv);
-            return;
-        }
-        
-        // ИСПРАВЛЕНИЕ: Добавляем таймаут, чтобы показать индикатор обработки перед отправкой запроса
-        setTimeout(() => {
-            // Отправляем запрос на сервер с добавленным try-catch для отлова сетевых ошибок
-            try {
-                fetch('<?php echo e(route("media.process")); ?>', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        // Проверяем тип содержимого ответа
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.indexOf('application/json') !== -1) {
-                            return response.json().then(data => {
-                                throw new Error(data.error || 'Ошибка сервера: ' + response.status);
-                            });
-                        }
-                        throw new Error('Ошибка сервера: ' + response.status);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        console.log('Файл успешно обработан:', data);
-                        
-                        // Показываем сообщение об успехе
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'alert alert-success position-fixed top-0 start-0 end-0 m-3 text-center';
-                        successMessage.textContent = 'Файл успешно обработан! Перенаправляем...';
-                        document.body.appendChild(successMessage);
-                        
-                        // Добавляем небольшую задержку перед перенаправлением
-                        setTimeout(() => {
-                            // После успешной обработки перенаправляем пользователя
-                            if (data.redirect_url) {
-                                window.location.href = data.redirect_url;
-                            } else {
-                                // Если нет URL для перенаправления, просто перезагружаем страницу
-                                window.location.reload();
-                            }
-                        }, 1000);
-                    } else {
-                        throw new Error(data.error || 'Неизвестная ошибка');
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка при отправке запроса:', error);
-                    
-                    // Показываем подробную информацию об ошибке
-                    processingIndicator.style.display = 'none';
-                    
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'alert alert-danger position-fixed bottom-0 start-0 end-0 m-3';
-                    errorDiv.innerHTML = `
-                        <h5 class="alert-heading">Ошибка при обработке файла</h5>
-                        <p>${error.message || 'Неизвестная ошибка'}</p>
-                        <button type="button" class="btn btn-primary btn-sm mt-2" id="tryAgainBtn">
-                            <i class="bi bi-arrow-repeat me-1"></i> Повторить
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-sm mt-2 ms-2" id="reloadPageBtn">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Обновить страницу
-                        </button>
-                    `;
-                    
-                    document.body.appendChild(errorDiv);
-                    
-                    // Обработчики для кнопок
-                    document.getElementById('tryAgainBtn').addEventListener('click', () => {
-                        errorDiv.remove();
-                        actionButtons.style.display = 'flex';
-                    });
-                    
-                    document.getElementById('reloadPageBtn').addEventListener('click', () => {
-                        window.location.reload();
-                    });
-                });
-            } catch (e) {
-                console.error('Критическая ошибка при отправке запроса:', e);
-                processingIndicator.style.display = 'none';
-                
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'alert alert-danger position-fixed bottom-0 start-0 end-0 m-3';
-                errorDiv.innerHTML = `
-                    <h5 class="alert-heading">Критическая ошибка</h5>
-                    <p>${e.message || 'Произошла неизвестная ошибка при отправке данных'}</p>
-                    <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="window.location.reload()">
-                        <i class="bi bi-arrow-clockwise me-1"></i> Обновить страницу
-                    </button>
-                `;
-                
-                document.body.appendChild(errorDiv);
-            }
-        }, 500); // Небольшая задержка для отображения индикатора загрузки
+            
+            // Обработчик для кнопки "Повторить"
+            document.getElementById('tryAgainBtn').addEventListener('click', () => {
+                errorDiv.remove();
+                actionButtons.style.display = 'flex';
+            });
+        });
     }
     
-    // Инициализация редактора при загрузке страницы - блокируем повторные инициализации
-    if (!window.editorInitialized) {
-        init();
-        window.editorInitialized = true;
-        console.log('Редактор инициализирован в первый раз');
-    } else {
-        console.log('Редактор уже был инициализирован ранее');
-    }
+    // Инициализация редактора при загрузке страницы
+    init();
 });
 </script>
 <?php /**PATH C:\OSPanel\domains\tyty\resources\views/media/media-editor/scripts.blade.php ENDPATH**/ ?>

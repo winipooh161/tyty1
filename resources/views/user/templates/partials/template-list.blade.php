@@ -8,9 +8,9 @@
                 <div class="card-img-top template-preview">
                     @if($template->cover_path)
                         @if($template->cover_type === 'video')
-                            <video src="{{ asset('storage/template_covers/'.$template->cover_path) }}" class="img-fluid" autoplay loop muted></video>
+                            <video src="{{ asset('storage/' . $template->cover_path) }}" class="img-fluid" autoplay loop muted></video>
                         @else
-                            <img src="{{ asset('storage/template_covers/'.$template->cover_path) }}" alt="{{ $template->name }}" class="img-fluid">
+                            <img src="{{ asset('storage/' . $template->cover_path) }}" alt="{{ $template->name }}" class="img-fluid">
                         @endif
                     @else
                         <div class="default-preview d-flex align-items-center justify-content-center">
@@ -69,18 +69,6 @@
         left: 0;
     }
     
-    /* Стилизация пустого списка внутри папки */
-    .empty-folder {
-        text-align: center;
-        padding: 40px 0;
-    }
-    
-    .empty-folder-icon {
-        font-size: 4rem;
-        color: #dee2e6;
-        margin-bottom: 15px;
-    }
-    
     /* Новые стили для кликабельной карточки */
     .template-card-link {
         display: block;
@@ -95,15 +83,84 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
+    
+    /* Стили для пустых карточек */
+    .empty-template-card {
+   
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+    }
+    
+    .empty-preview {
+        background-color: #ffffff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 150px;
+    }
+    
+    .empty-card-content {
+        width: 100%;
+        height: 100%;
+        background-color: transparent;
+    }
+    
+    /* Убираем эффект hover для пустых карточек */
+    .empty-template-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
 </style>
 
 @else
-<div class="empty-folder text-center">
-    <div class="empty-folder-icon">
-        <i class="bi bi-folder2-open"></i>
+<!-- Пустые карточки вместо сообщения о пустой папке -->
+<div class="row g-2">
+    @for($i = 0; $i < 12; $i++)
+    <div class="col-4">
+        <div class="card h-100 template-card empty-template-card">
+            <div class="card-img-top template-preview empty-preview">
+                <div class="empty-card-content">
+                    <!-- Пустая карточка -->
+                </div>
+            </div>
+        </div>
     </div>
-    <h4 class="text-muted">Папка пуста</h4>
+    @endfor
 </div>
+
+<style>
+    /* Стили для пустых карточек */
+    .empty-template-card {
+        border: 2px dashed #e9ecef;
+        background-color: #f8f9fa;
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+    }
+    
+    .empty-preview {
+        background-color: #ffffff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 150px;
+    }
+    
+    .empty-card-content {
+        width: 100%;
+        height: 100%;
+        background-color: transparent;
+    }
+    
+    /* Убираем эффект hover для пустых карточек */
+    .empty-template-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+</style>
 @endif
 
 @if(!isset($isOwner) || $isOwner === true)

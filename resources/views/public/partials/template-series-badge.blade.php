@@ -1,4 +1,7 @@
-@if(isset($userTemplate->custom_data) && isset($userTemplate->custom_data['is_series']) && $userTemplate->custom_data['is_series'])
+@if(isset($userTemplate->custom_data) && (
+    (isset($userTemplate->custom_data['is_series']) && $userTemplate->custom_data['is_series']) ||
+    (isset($userTemplate->custom_data['series_quantity']) && $userTemplate->custom_data['series_quantity'] > 1)
+))
     @php
         // Преобразуем custom_data в массив, если это строка или объект
         $customData = $userTemplate->custom_data;
@@ -16,10 +19,23 @@
             ->count();
         $requiredScans = $customData['required_scans'] ?? 1;
     @endphp
-    {{-- <div class="series-badge">
+    <div class="series-badge">
         <i class="bi bi-collection me-1"></i> Серия: {{ $remainingCount }} из {{ $totalCount }} доступно
         @if($requiredScans > 1)
             <span class="badge bg-info ms-2">Сканирований: {{ $scanCount }}/{{ $requiredScans }}</span>
         @endif
-    </div> --}}
+    </div>
+    
+    <!-- Скрипт для инициализации данных о серии -->
+    <script>
+        // Делаем данные о серии доступными для JavaScript
+        const seriesDataFromServer = {
+            is_series: true,
+            series_quantity: {{ $totalCount }},
+            acquired_count: {{ $acquiredCount }},
+            scan_count: {{ $scanCount }},
+            required_scans: {{ $requiredScans }},
+            remaining_count: {{ $remainingCount }}
+        };
+    </script>
 @endif

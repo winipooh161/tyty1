@@ -1,5 +1,5 @@
 <!-- Секция для редактирования видео -->
-<div class="video-editor-section " id="videoEditorSection" style="display: none; padding-bottom: 100px;">
+<div class="video-editor-section p-0" id="videoEditorSection" style="display: none;">
     <div class="video-container text-center position-relative">
         <!-- Мобильно-оптимизированный видеоплеер -->
         <video id="videoPreview" controls playsinline class="img-fluid max-height-full"></video>

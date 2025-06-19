@@ -24,6 +24,11 @@ export class MobileNavPopup {
         // Добавляем переменные для хранения модальных триггеров
         this.modalTriggers = new Map();
 
+        // Добавляем переменные для управления скроллом
+        this.originalBodyOverflow = '';
+        this.originalBodyPosition = '';
+        this.scrollY = 0;
+
         this.init();
     }
 
@@ -331,6 +336,9 @@ export class MobileNavPopup {
         this.currentPopupConfig = config;
         this.isPopupOpen = true;
         
+        // Блокируем скролл body перед показом попапа
+        this.blockBodyScroll();
+        
         // Сохраняем ID иконки, на которой был сделан свайп
         // Это значение необходимо для связывания с модальным окном
         this.currentIconId = iconId;
@@ -606,8 +614,77 @@ export class MobileNavPopup {
             this.popupContainer.style.visibility = 'hidden';
             this.isPopupOpen = false;
             this.currentPopupConfig = null;
-            // Не очищаем this.currentIconId здесь, так как он может понадобиться при открытии модалки
+            
+            // Убеждаемся, что активная иконка восстановлена
+            // если это не иконка, активно используемая в модальном окне
+            if (this.currentIconId && 
+                !document.querySelector('.modal-panel.show') &&
+                window.MobileNavWheelPicker &&
+                window.MobileNavWheelPicker.core) {
+                
+                window.MobileNavWheelPicker.core.restoreIcon(this.currentIconId);
+                this.currentIconId = null;
+            }
+            
+            // Разблокируем скролл body после закрытия попапа
+            this.unblockBodyScroll();
         }, 400);
+    }
+
+    // Улучшенный метод для блокировки скролла body с проверкой текущего пути
+    blockBodyScroll() {
+        // Проверяем путь - на страницах редактора не блокируем скролл
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('/templates/create-new/') || 
+            currentPath.includes('/templates/editor') || 
+            currentPath.includes('/client/templates/create-new/') || 
+            currentPath.includes('/client/templates/editor')) {
+            console.log('Блокировка скролла пропущена на странице редактора');
+            return;
+        }
+        
+        // Сохраняем текущее положение скролла
+        this.scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Сохраняем оригинальные стили body
+        this.originalBodyOverflow = document.body.style.overflow;
+        this.originalBodyPosition = document.body.style.position;
+        
+        // Применяем стили для блокировки скролла
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this.scrollY}px`;
+        document.body.style.width = '100%';
+        
+        // Добавляем класс для дополнительной стилизации
+        document.body.classList.add('popup-scroll-blocked');
+    }
+
+    // Улучшенный метод для разблокировки скролла body
+    unblockBodyScroll() {
+        // Проверяем, был ли скролл заблокирован
+        if (!document.body.classList.contains('popup-scroll-blocked')) {
+            return;
+        }
+        
+        // Восстанавливаем оригинальные стили
+        document.body.style.overflow = this.originalBodyOverflow;
+        document.body.style.position = this.originalBodyPosition;
+        document.body.style.top = '';
+        document.body.style.width = '';
+        
+        // Убираем класс
+        document.body.classList.remove('popup-scroll-blocked');
+        
+        // Восстанавливаем позицию скролла
+        if (this.scrollY > 0) {
+            window.scrollTo(0, this.scrollY);
+        }
+        
+        // Сбрасываем сохраненные значения
+        this.scrollY = 0;
+        this.originalBodyOverflow = '';
+        this.originalBodyPosition = '';
     }
 
     // Метод для интеграции с событиями скролла навигации

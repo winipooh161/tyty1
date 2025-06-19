@@ -5,11 +5,9 @@
 
     RewriteEngine On
 
-
-# SetEnvIf X-Forwarded-Proto https SERVER_PORT=443
-# SetEnvIf X-Forwarded-Proto https HTTPS=on
-# RewriteCond %{HTTP:HTTPS} !=on [NC]
-# RewriteRule ^(.*)$ https://%{SERVER_NAME}%{REQUEST_URI} [R=301,L]
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
@@ -20,6 +18,21 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Установка лимитов PHP
+<IfModule mod_php.c>
+    php_value upload_max_filesize 100M
+    php_value post_max_size 100M
+    php_value memory_limit 512M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value max_file_uploads 20
+</IfModule>
+
+# Для FastCGI
+<IfModule mod_fcgid.c>
+    FcgidMaxRequestLen 104857600
 </IfModule>
 
 

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\UserTemplate;
 use App\Models\TemplateFolder;
-use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class UserTemplateController extends Controller
 {
@@ -18,66 +18,46 @@ class UserTemplateController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:client,admin')->except(['showUserTemplates']);
     }
 
     /**
-     * Показать список шаблонов текущего пользователя.
+     * Показать список шаблонов пользователя.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
-        // Получаем шаблоны, созданные текущим пользователем (где user_id = текущий пользователь)
-        $userCreatedTemplates = UserTemplate::where('user_id', Auth::id())->get();
+        // Получаем текущего пользователя
+        $user = Auth::user();
         
-        // Получаем шаблоны, предназначенные для текущего пользователя (где target_user_id = текущий пользователь)
-        $userTargetedTemplates = UserTemplate::where('target_user_id', Auth::id())->get();
+        // Логируем для отладки
+        Log::info('UserTemplateController@index: Загрузка шаблонов для пользователя ' . $user->id);
         
-        // Объединяем коллекции
-        $userTemplates = $userCreatedTemplates->merge($userTargetedTemplates);
+        // Получаем все папки пользователя
+        $folders = TemplateFolder::where('user_id', $user->id)->get();
         
-        $folders = TemplateFolder::where('user_id', Auth::id())
-            ->orderBy('display_order')
+        // Получаем шаблоны, созданные пользователем
+        $templates = UserTemplate::where('user_id', $user->id)
+            ->with(['template.category', 'folder'])
+            ->latest()
             ->get();
-            
-        return view('user.templates.index', compact('userTemplates', 'folders'));
-    }
-
-    /**
-     * Показать список шаблонов указанного пользователя для других пользователей.
-     *
-     * @param  int  $userId
-     * @return \Illuminate\View\View
-     */
-    public function showUserTemplates($userId)
-    {
-        // Проверяем существование пользователя
-        $user = User::findOrFail($userId);
-
-        // Если пользователь просматривает свои шаблоны, перенаправляем его на стандартный маршрут
-        if (Auth::id() == $userId) {
-            return redirect()->route('user.templates');
+        
+        // Проверка наличия обложек
+        foreach ($templates as $template) {
+            if ($template->cover_path) {
+                $exists = \Storage::disk('public')->exists($template->cover_path);
+                \Log::info("Шаблон ID={$template->id}, cover_path={$template->cover_path}, exists={$exists}");
+            }
         }
-
-        // Получаем только опубликованные шаблоны, созданные указанным пользователем
-        $userTemplates = UserTemplate::where('user_id', $userId)
-            ->where('status', 'published')  // Только опубликованные шаблоны
-            ->get();
         
-        $folders = TemplateFolder::where('user_id', $userId)
-            ->orderBy('display_order')
-            ->get();
-            
-        // Передаем флаг для шаблона, что просмотр идет от другого пользователя
-        $isOwner = false;
-        $profileUser = $user;
-            
-        return view('user.templates.index', compact('userTemplates', 'folders', 'isOwner', 'profileUser'));
+        // Логируем количество найденных шаблонов для отладки
+        Log::info('UserTemplateController@index: Найдено шаблонов: ' . $templates->count());
+        
+        return view('user.templates.index', compact('templates', 'folders'));
     }
-
+    
     /**
-     * Показать отдельный пользовательский шаблон.
+     * Показать конкретный шаблон пользователя.
      *
      * @param  int  $id
      * @return \Illuminate\View\View
@@ -85,15 +65,15 @@ class UserTemplateController extends Controller
     public function show($id)
     {
         $userTemplate = UserTemplate::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->with('template.category')
-            ->firstOrFail();
-            
+                        ->where('user_id', Auth::id())
+                        ->where('status', 'published')
+                        ->firstOrFail();
+        
         return view('user.templates.show', compact('userTemplate'));
     }
-
+    
     /**
-     * Редактировать существующий пользовательский шаблон.
+     * Редактирование шаблона пользователя.
      *
      * @param  int  $id
      * @return \Illuminate\View\View
@@ -101,18 +81,16 @@ class UserTemplateController extends Controller
     public function edit($id)
     {
         $userTemplate = UserTemplate::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->with('template')
-            ->firstOrFail();
-            
-        return view('templates.editor', [
-            'template' => $userTemplate->template,
-            'userTemplate' => $userTemplate
-        ]);
+                        ->where('user_id', Auth::id())
+                        ->firstOrFail();
+        
+        $template = $userTemplate->template;
+        
+        return view('templates.editor', compact('template', 'userTemplate'));
     }
-
+    
     /**
-     * Удалить пользовательский шаблон.
+     * Удалить шаблон пользователя.
      *
      * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
@@ -120,80 +98,19 @@ class UserTemplateController extends Controller
     public function destroy($id)
     {
         $userTemplate = UserTemplate::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-            
+                        ->where('user_id', Auth::id())
+                        ->firstOrFail();
+        
+        // Удаляем файл обложки, если он существует
+        if ($userTemplate->cover_path) {
+            $coverPath = public_path('storage/template_covers/' . $userTemplate->cover_path);
+            if (file_exists($coverPath)) {
+                unlink($coverPath);
+            }
+        }
+        
         $userTemplate->delete();
         
-        return redirect()->route('user.templates')->with('status', 'Шаблон успешно удален!');
-    }
-
-    /**
-     * Опубликовать шаблон пользователя.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function publish($id)
-    {
-        $userTemplate = UserTemplate::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-        
-        $userTemplate->update(['status' => 'published']);
-        
-        return redirect()->back()->with('status', 'Шаблон успешно опубликован!');
-    }
-    
-    /**
-     * Отменить публикацию шаблона пользователя.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function unpublish($id)
-    {
-        $userTemplate = UserTemplate::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-        
-        $userTemplate->update(['status' => 'draft']);
-        
-        return redirect()->back()->with('status', 'Публикация шаблона отменена!');
-    }
-    
-    /**
-     * Переместить шаблон в папку.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function moveToFolder(Request $request, $id)
-    {
-        $userTemplate = UserTemplate::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-
-        $request->validate([
-            'folder_id' => 'nullable|exists:template_folders,id',
-        ]);
-
-        // Проверяем, что папка принадлежит текущему пользователю, если указана
-        if ($request->folder_id) {
-            $folder = TemplateFolder::where('id', $request->folder_id)
-                ->where('user_id', Auth::id())
-                ->firstOrFail();
-        }
-
-        try {
-            $userTemplate->update(['folder_id' => $request->folder_id]);
-        } catch (\Exception $e) {
-            // В случае ошибки выводим детальное сообщение в логи
-            \Log::error('Ошибка при перемещении шаблона: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Ошибка при перемещении шаблона. Пожалуйста, свяжитесь с администратором.');
-        }
-
-        return redirect()->back()->with('status', 'Шаблон успешно перемещен!');
+        return redirect()->route('user.templates')->with('status', 'Шаблон успешно удален');
     }
 }

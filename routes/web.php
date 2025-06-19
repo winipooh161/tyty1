@@ -78,8 +78,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile/edit', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     
-    // Добавляем маршруты для обновления профиля через AJAX
-    Route::post('/user/update-profile', [App\Http\Controllers\ProfileController::class, 'updateAjax'])->name('user.update-profile');
+    // Исправляем маршрут для обновления профиля через AJAX - используем метод update вместо updateAjax
+    Route::post('/user/update-profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('user.update-profile');
     Route::post('/user/update-avatar', [App\Http\Controllers\ProfileController::class, 'updateAvatar'])->name('user.update-avatar');
 });
 
@@ -115,11 +115,9 @@ Route::prefix('client')->middleware('role:client,admin')->group(function () {
     // Новый маршрут для обработки отправки форм из шаблонов
     Route::post('/form-submission/{templateId}', [App\Http\Controllers\FormSubmissionController::class, 'submit'])->name('form.submit');
     
-    // Маршруты для управления пользовательскими шаблонами
+    // Исправляем маршрут для управления пользовательскими шаблонами
     Route::get('/my-templates', [UserTemplateController::class, 'index'])->name('user.templates');
     Route::get('/my-templates/{id}', [UserTemplateController::class, 'show'])->name('user.templates.show');
-    // Удаляем маршрут для редактирования
-    // Route::get('/my-templates/{id}/edit', [UserTemplateController::class, 'edit'])->name('user.templates.edit');
     Route::delete('/my-templates/{id}', [UserTemplateController::class, 'destroy'])->name('user.templates.destroy');
     
     // Новые маршруты для публикации/отмены публикации шаблонов
@@ -167,11 +165,43 @@ Route::middleware(['auth', 'role:client,admin'])->group(function () {
     Route::get('/media/editor', 'App\Http\Controllers\MediaEditorController@index')->name('media.editor');
     Route::get('/media/editor/{template_id}', 'App\Http\Controllers\MediaEditorController@editForTemplate')->name('media.editor.template');
     Route::post('/media/process', 'App\Http\Controllers\MediaEditorController@processMedia')->name('media.process');
+});
+
+
+// Маршруты для шаблонов
+Route::middleware(['auth'])->prefix('templates')->group(function () {
+    Route::get('/categories', [App\Http\Controllers\TemplateController::class, 'categories'])->name('templates.categories');
     
-    // Новый маршрут для прямого перехода к базовому шаблону через редактор медиа
-    Route::get('/create/template', 'App\Http\Controllers\DefaultTemplateController@showEditor')->name('create.template');
+    // Добавляем или исправляем маршрут для редактора шаблонов
+    Route::get('/editor/{id}', [App\Http\Controllers\TemplateEditorController::class, 'edit'])->name('templates.editor');
+    Route::get('/create-new/{id}', [App\Http\Controllers\TemplateEditorController::class, 'createNew'])->name('templates.create-new');
+    Route::post('/save/{id}', [App\Http\Controllers\TemplateEditorController::class, 'save'])->name('templates.save');
+});
+
+// Дополнительно добавляем маршруты для клиентской части
+Route::middleware(['auth', 'role:client,admin'])->prefix('client')->name('client.')->group(function () {
+    // Шаблоны клиентов
+    Route::get('/templates/categories', [App\Http\Controllers\TemplateController::class, 'categories'])->name('templates.categories');
+    Route::get('/templates/{category:slug}', [App\Http\Controllers\TemplateController::class, 'index'])->name('templates.index');
+    Route::get('/templates/{category:slug}/{template:slug}', [App\Http\Controllers\TemplateController::class, 'show'])->name('templates.show');
+    
+    // Создание и редактирование шаблонов
+    Route::get('/templates/editor/{id}', [App\Http\Controllers\TemplateEditorController::class, 'edit'])->name('templates.editor');
+    Route::get('/templates/create-new/{id}', [App\Http\Controllers\TemplateEditorController::class, 'createNew'])->name('templates.create-new');
+    Route::post('/templates/save/{id}', [App\Http\Controllers\TemplateEditorController::class, 'save'])->name('templates.save');
 });
 
 if (app()->environment('production')) {
     URL::forceScheme('https');
 }
+
+// Добавим также стили для мобильного отображения
+Route::middleware(['auth'])->group(function() {
+    // Маршрут для проверки мобильной навигации
+    Route::get('/check-mobile-nav', function() {
+        return response()->json([
+            'success' => true,
+            'message' => 'Mobile navigation check successful'
+        ]);
+    })->name('check-mobile-nav');
+});
