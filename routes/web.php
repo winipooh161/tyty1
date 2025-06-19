@@ -167,6 +167,30 @@ Route::middleware(['auth', 'role:client,admin'])->group(function () {
     Route::post('/media/process', 'App\Http\Controllers\MediaEditorController@processMedia')->name('media.process');
 });
 
+// Маршруты для медиа-редактора
+Route::middleware(['auth'])->group(function () {
+    // Маршрут для отображения редактора
+    Route::get('/media/editor/{template?}', [App\Http\Controllers\MediaController::class, 'editor'])
+        ->name('media.editor');
+    
+    // Маршрут для обработки медиафайлов
+    Route::post('/media/process', [App\Http\Controllers\MediaController::class, 'process'])
+        ->name('media.process');
+    
+    // Альтернативный маршрут для обработки медиа
+    Route::post('/media/process-media', [App\Http\Controllers\MediaEditorController::class, 'processMedia'])
+        ->name('media.process-media');
+    
+    // Маршрут для создания нового шаблона
+    Route::get('/templates/create-new/{id}', [App\Http\Controllers\TemplateController::class, 'createNew'])
+        ->name('templates.create-new');
+    
+    // Маршрут для редактора шаблонов
+    Route::get('/templates/editor/{id}', [App\Http\Controllers\TemplateController::class, 'edit'])
+        ->name('templates.editor');
+    
+  
+});
 
 // Маршруты для шаблонов
 Route::middleware(['auth'])->prefix('templates')->group(function () {

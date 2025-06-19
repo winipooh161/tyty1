@@ -7,10 +7,31 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use App\Models\Template;
+use App\Services\MediaOptimizationService;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class MediaController extends Controller
 {
+    /**
+     * Сервис оптимизации медиафайлов
+     * 
+     * @var \App\Services\MediaOptimizationService
+     */
+    protected $mediaOptimizationService;
+    
+    /**
+     * Создание нового экземпляра контроллера
+     *
+     * @param \App\Services\MediaOptimizationService $mediaOptimizationService
+     * @return void
+     */
+    public function __construct(MediaOptimizationService $mediaOptimizationService)
+    {
+        $this->middleware('auth');
+        $this->mediaOptimizationService = $mediaOptimizationService;
+    }
+
     /**
      * Отображение страницы редактора медиа
      *
@@ -42,6 +63,13 @@ class MediaController extends Controller
     public function process(Request $request)
     {
         try {
+            // Добавляем подробное логирование для отладки
+            Log::info('Начало обработки медиа файла', [
+                'user_id' => auth()->id(),
+                'has_file' => $request->hasFile('media_file'),
+                'content_type' => $request->header('Content-Type')
+            ]);
+            
             // Проверяем наличие файла
             if (!$request->hasFile('media_file')) {
                 return response()->json([
@@ -52,6 +80,14 @@ class MediaController extends Controller
 
             $file = $request->file('media_file');
             $fileType = $file->getMimeType();
+            
+            // Логируем информацию о файле
+            Log::info('Информация о загруженном файле', [
+                'name' => $file->getClientOriginalName(),
+                'type' => $fileType,
+                'size' => $file->getSize(),
+                'extension' => $file->getClientOriginalExtension()
+            ]);
             
             // Определяем тип файла
             $isImage = strpos($fileType, 'image/') === 0;
@@ -77,38 +113,178 @@ class MediaController extends Controller
             // Сохраняем файл
             $file->storeAs($path, $fileName, 'public');
             
-            // Сохраняем данные о трансформации/обрезке
-            if ($isImage && $request->has('crop_data')) {
-                $cropData = json_decode($request->input('crop_data'), true);
-                Session::put('image_crop_data', $cropData);
-            } elseif ($isVideo) {
-                $videoStart = $request->input('video_start', 0);
-                $videoEnd = $request->input('video_end', 15);
+            Log::info('Файл успешно сохранен', [
+                'fullPath' => $fullPath
+            ]);
+            
+            // Проверяем наличие сервиса оптимизации
+            if (!$this->mediaOptimizationService) {
+                Log::error('Сервис оптимизации медиа не инициализирован');
+                throw new Exception('Сервис оптимизации медиа недоступен');
+            }
+            
+            // Обрабатываем файл в зависимости от типа
+            if ($isImage) {
+                $options = [
+                    'maxWidth' => 1200,
+                    'maxHeight' => 1200,
+                    'webpQuality' => 80,
+                    'convertToWebP' => true
+                ];
                 
-                Session::put('video_trim_data', [
-                    'start' => $videoStart,
-                    'end' => $videoEnd
+                // Получаем данные о кадрировании из запроса
+                if ($request->has('crop_data')) {
+                    $cropData = json_decode($request->input('crop_data'), true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        Log::warning('Ошибка декодирования JSON crop_data', [
+                            'error' => json_last_error_msg(),
+                            'input' => $request->input('crop_data')
+                        ]);
+                    } else {
+                        $options = array_merge($options, $cropData);
+                    }
+                }
+                
+                Log::info('Начало обработки изображения', [
+                    'options' => $options
+                ]);
+                
+                // Обрабатываем изображение
+                $result = $this->mediaOptimizationService->processImage($fullPath, $options);
+                
+                if (!$result['success']) {
+                    Log::error('Ошибка при обработке изображения', [
+                        'error' => $result['error'] ?? 'Неизвестная ошибка',
+                        'file_path' => $fullPath
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => $result['error'] ?? 'Ошибка при обработке изображения'
+                    ], 500);
+                }
+                
+                // Сохраняем путь к обработанному файлу
+                $processedPath = $result['file_path'];
+                Session::put('media_editor_file', $processedPath);
+                
+                // Добавляем информацию о сжатии
+                $compressionData = [
+                    'original_size' => $result['original_size'] ?? 0,
+                    'new_size' => $result['new_size'] ?? 0,
+                    'compression_ratio' => $result['compression_ratio'] ?? 0
+                ];
+                
+                Session::put('media_compression_data', $compressionData);
+                
+                Log::info('Изображение успешно обработано', [
+                    'processed_path' => $processedPath,
+                    'compression_data' => $compressionData
+                ]);
+                
+            } elseif ($isVideo) {
+                // Предварительная проверка FFmpeg
+                if (!$this->mediaOptimizationService->checkFFmpeg()) {
+                    Log::error('FFmpeg не установлен. Видео не может быть обработано.');
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'FFmpeg не установлен. Для обработки видео необходимо установить FFmpeg.',
+                        'install_required' => true
+                    ], 500);
+                }
+                
+                $options = [
+                    'start_time' => (float)$request->input('video_start', 0),
+                    'end_time' => (float)$request->input('video_end', 15),
+                    'width' => 1280, // Максимальная ширина для хорошего качества
+                    'height' => 0, // Автоматическая высота
+                ];
+                
+                Log::info('Начало обработки видео', [
+                    'options' => $options
+                ]);
+                
+                // Обрабатываем видео
+                $result = $this->mediaOptimizationService->processVideo($fullPath, $options);
+                
+                if (!$result['success']) {
+                    Log::error('Ошибка при обработке видео', [
+                        'error' => $result['error'] ?? 'Неизвестная ошибка',
+                        'file_path' => $fullPath
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => $result['error'] ?? 'Ошибка при обработке видео'
+                    ], 500);
+                }
+                
+                // Создаем миниатюру для видео
+                $thumbnailPath = $this->mediaOptimizationService->createVideoThumbnail($fullPath, $options['start_time'] + 1);
+                
+                // Сохраняем пути к обработанному видео и миниатюре
+                $processedPath = $result['file_path'];
+                Session::put('media_editor_file', $processedPath);
+                Session::put('media_editor_thumbnail', $thumbnailPath);
+                
+                // Добавляем информацию о сжатии
+                $compressionData = [
+                    'original_size' => $result['original_size'] ?? 0,
+                    'new_size' => $result['new_size'] ?? 0,
+                    'compression_ratio' => $result['compression_ratio'] ?? 0,
+                    'width' => $result['width'] ?? 0,
+                    'height' => $result['height'] ?? 0
+                ];
+                
+                Session::put('media_compression_data', $compressionData);
+                
+                Log::info('Видео успешно обработано', [
+                    'processed_path' => $processedPath,
+                    'thumbnail_path' => $thumbnailPath,
+                    'compression_data' => $compressionData
                 ]);
             }
             
-            // Сохраняем информацию о файле в сессии
-            Session::put('media_editor_file', $fullPath);
+            // Сохраняем информацию о типе медиа в сессии
             Session::put('media_editor_type', $isImage ? 'image' : 'video');
             
             // Определяем URL для перенаправления
             $redirectUrl = $this->getRedirectUrl($request);
             
-            return response()->json([
-                'success' => true,
-                'file_path' => Storage::url($fullPath),
-                'file_type' => $isImage ? 'image' : 'video',
+            Log::info('Медиа файл успешно обработан', [
                 'redirect_url' => $redirectUrl
             ]);
             
+            return response()->json([
+                'success' => true,
+                'file_path' => Storage::url($processedPath ?? $fullPath),
+                'file_type' => $isImage ? 'image' : 'video',
+                'redirect_url' => $redirectUrl,
+                'compression_data' => $compressionData ?? null
+            ]);
+            
         } catch (Exception $e) {
+            // Подробное логирование ошибки
+            Log::error('Исключение при обработке медиа файла', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // В продакшене не стоит возвращать подробности исключения клиенту
+            $errorMessage = app()->environment('production') 
+                ? 'Произошла ошибка при обработке файла. Попробуйте позже.' 
+                : 'Произошла ошибка при обработке файла: ' . $e->getMessage();
+            
             return response()->json([
                 'success' => false,
-                'error' => 'Произошла ошибка при обработке файла: ' . $e->getMessage()
+                'error' => $errorMessage,
+                'debug_info' => app()->environment('production') ? null : [
+                    'exception' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile() . ':' . $e->getLine()
+                ]
             ], 500);
         }
     }
@@ -124,17 +300,43 @@ class MediaController extends Controller
         // Если был указан шаблон, вернемся к нему
         if ($request->has('template_id')) {
             $templateId = $request->input('template_id');
-            return route('templates.editor', $templateId);
+            
+            try {
+                // Проверяем наличие маршрута templates.create-new
+                if (route('templates.create-new', $templateId, false)) {
+                    return route('templates.create-new', $templateId);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Маршрут templates.create-new недоступен: ' . $e->getMessage());
+            }
+            
+            // Резервный вариант
+            try {
+                if (route('templates.editor', $templateId, false)) {
+                    return route('templates.editor', $templateId);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Маршрут templates.editor недоступен: ' . $e->getMessage());
+            }
         }
         
         // Иначе перенаправляем на дефолтный шаблон
         $defaultTemplate = Template::where('is_default', true)->first();
         
         if ($defaultTemplate) {
-            return route('templates.editor', $defaultTemplate->id);
+            try {
+                return route('templates.create-new', $defaultTemplate->id);
+            } catch (\Exception $e) {
+                Log::warning('Не удалось сформировать URL для создания шаблона: ' . $e->getMessage());
+            }
         }
         
-        // Если дефолтный шаблон не найден, перенаправляем на список категорий шаблонов
-        return route('client.templates.categories');
+        // Резервный вариант перенаправления
+        try {
+            return route('client.templates.categories');
+        } catch (\Exception $e) {
+            Log::warning('Не удалось сформировать URL для категорий шаблонов: ' . $e->getMessage());
+            return '/client/my-templates'; // Самый базовый вариант
+        }
     }
 }

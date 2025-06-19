@@ -1,10 +1,27 @@
 /**
- * Модуль для работы с редактором медиа-файлов
+ * Media Editor - клиентский скрипт для редактирования медиафайлов
  */
-(function() {
-    'use strict';
+document.addEventListener('DOMContentLoaded', function() {
+    // Основные элементы редактора
+    const mediaFile = document.getElementById('mediaFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadSection = document.getElementById('uploadSection');
+    const imageEditorSection = document.getElementById('imageEditorSection');
+    const videoEditorSection = document.getElementById('videoEditorSection');
+    const actionButtons = document.getElementById('actionButtons');
+    const saveBtn = document.getElementById('saveBtn');
+    const processingIndicator = document.getElementById('processingIndicator');
+    const editorContainer = document.querySelector('.media-editor-container');
     
-    // Объект состояния редактора
+    // Элементы редактора изображений и видео
+    const imagePreview = document.getElementById('imagePreview');
+    const imageViewport = document.getElementById('imageViewport');
+    const videoPreview = document.getElementById('videoPreview');
+    const mobileProgressBar = document.getElementById('mobileProgressBar');
+    const mobileStartHandle = document.getElementById('mobileStartHandle');
+    const mobileEndHandle = document.getElementById('mobileEndHandle');
+    
+    // Переменные для хранения данных
     const mediaState = {
         currentFile: null,
         fileType: null,
@@ -17,111 +34,59 @@
         videoEndTime: 15,
         videoDuration: 0,
         isPlaying: false,
+        templateId: document.getElementById('templateId')?.value,
         isDragging: false,
-        lastTouchDistance: 0,
-        templateId: null
+        lastTouchDistance: 0
     };
     
-    // Модуль для логирования
+    // Модуль логирования для дебага
     const logger = {
         log: function(msg, data) {
             console.log(`[MediaEditor] ${msg}`, data || '');
-            if (window.mobileLogEnabled && window.mobileLog) {
-                window.mobileLog(msg);
-            }
         },
         warn: function(msg, data) {
             console.warn(`[MediaEditor] ${msg}`, data || '');
-            if (window.mobileLogEnabled && window.mobileLog) {
-                window.mobileLog(msg, 'warn');
-            }
         },
         error: function(msg, data) {
             console.error(`[MediaEditor] ${msg}`, data || '');
-            if (window.mobileLogEnabled && window.mobileLog) {
-                window.mobileLog(msg, 'error');
-            }
         }
     };
     
-    // DOM элементы редактора
-    let elements = {
-        mediaFile: null,
-        uploadBtn: null,
-        uploadSection: null,
-        imageEditorSection: null,
-        videoEditorSection: null,
-        actionButtons: null,
-        saveBtn: null,
-        processingIndicator: null,
-        editorContainer: null,
-        imagePreview: null,
-        imageViewport: null,
-        videoPreview: null,
-        mobileProgressBar: null,
-        mobileStartHandle: null,
-        mobileEndHandle: null
-    };
-    
     /**
-     * Модуль интерфейса редактора
+     * Модуль для работы с интерфейсом редактора
      */
     const UI = {
-        // Инициализация DOM элементов
-        initElements: function() {
-            elements.mediaFile = document.getElementById('mediaFile');
-            elements.uploadBtn = document.getElementById('uploadBtn');
-            elements.uploadSection = document.getElementById('uploadSection');
-            elements.imageEditorSection = document.getElementById('imageEditorSection');
-            elements.videoEditorSection = document.getElementById('videoEditorSection');
-            elements.actionButtons = document.getElementById('actionButtons');
-            elements.saveBtn = document.getElementById('saveBtn');
-            elements.processingIndicator = document.getElementById('processingIndicator');
-            elements.editorContainer = document.querySelector('.media-editor-container');
-            elements.imagePreview = document.getElementById('imagePreview');
-            elements.imageViewport = document.getElementById('imageViewport');
-            elements.videoPreview = document.getElementById('videoPreview');
-            elements.mobileProgressBar = document.getElementById('mobileProgressBar');
-            elements.mobileStartHandle = document.getElementById('mobileStartHandle');
-            elements.mobileEndHandle = document.getElementById('mobileEndHandle');
-            
-            // Получаем ID шаблона
-            mediaState.templateId = document.getElementById('templateId')?.value;
-            
-            logger.log('DOM элементы инициализированы');
-        },
-        
         // Скрытие секции загрузки
         hideUploadSection: function() {
-            elements.uploadSection.style.display = 'none';
-            elements.uploadSection.style.zIndex = '-1';
+            uploadSection.style.display = 'none';
+            uploadSection.style.zIndex = '-1';
             logger.log('Секция загрузки скрыта');
         },
         
         // Показать редактор изображений
         showImageEditor: function(fileUrl) {
-            this.hideUploadSection();
-            elements.imagePreview.src = fileUrl;
-            elements.imageEditorSection.style.display = 'block';
-            elements.videoEditorSection.style.display = 'none';
+            uploadSection.style.display = 'none';
+            imagePreview.src = fileUrl;
+            imageEditorSection.style.display = 'block';
+            videoEditorSection.style.display = 'none';
             
             mediaState.currentScale = 1;
             mediaState.currentTranslateX = 0;
             mediaState.currentTranslateY = 0;
             mediaState.currentRotation = 0;
-            this.updateImageTransform();
+            UI.updateImageTransform();
             
             logger.log('Редактор изображений активирован');
         },
         
         // Показать редактор видео
         showVideoEditor: function(fileUrl) {
-            this.hideUploadSection();
+            uploadSection.style.display = 'none';
             mediaState.originalVideo = mediaState.currentFile;
             
-            elements.videoPreview.src = fileUrl;
-            elements.imageEditorSection.style.display = 'none';
-            elements.videoEditorSection.style.display = 'block';
+            videoPreview.src = fileUrl;
+            imageEditorSection.style.display = 'none';
+            videoEditorSection.style.display = 'block';
             
             mediaState.videoStartTime = 0;
             mediaState.videoEndTime = 15;
@@ -133,18 +98,7 @@
         
         // Обновление трансформации изображения
         updateImageTransform: function() {
-            elements.imagePreview.style.transform = `translate(${mediaState.currentTranslateX}px, ${mediaState.currentTranslateY}px) scale(${mediaState.currentScale}) rotate(${mediaState.currentRotation}deg)`;
-        },
-        
-        // Показать индикатор обработки 
-        showProcessingIndicator: function() {
-            elements.actionButtons.style.display = 'none';
-            elements.processingIndicator.style.display = 'flex';
-        },
-        
-        // Скрыть индикатор обработки
-        hideProcessingIndicator: function() {
-            elements.processingIndicator.style.display = 'none';
+            imagePreview.style.transform = `translate(${mediaState.currentTranslateX}px, ${mediaState.currentTranslateY}px) scale(${mediaState.currentScale}) rotate(${mediaState.currentRotation}deg)`;
         },
         
         // Сброс редактора в начальное состояние
@@ -153,48 +107,34 @@
             mediaState.fileType = null;
             mediaState.originalVideo = null;
             
-            elements.uploadSection.style.display = 'flex';
-            elements.uploadSection.style.zIndex = '10';
-            elements.imageEditorSection.style.display = 'none';
-            elements.videoEditorSection.style.display = 'none';
-            elements.actionButtons.style.display = 'none';
-            elements.processingIndicator.style.display = 'none';
+            uploadSection.style.display = 'flex';
+            uploadSection.style.zIndex = '10';
+            imageEditorSection.style.display = 'none';
+            videoEditorSection.style.display = 'none';
+            actionButtons.style.display = 'none';
+            processingIndicator.style.display = 'none';
             
-            elements.editorContainer.classList.remove('file-selected');
-            elements.mediaFile.value = '';
+            editorContainer.classList.remove('file-selected');
+            mediaFile.value = '';
             
             mediaState.currentScale = 1;
             mediaState.currentTranslateX = 0;
             mediaState.currentTranslateY = 0;
             mediaState.currentRotation = 0;
-            this.updateImageTransform();
+            UI.updateImageTransform();
             
             logger.log('Редактор сброшен в исходное состояние');
         },
         
-        // Показать сообщение об ошибке
-        showError: function(message) {
-            logger.error(message);
-            this.hideProcessingIndicator();
-            
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'alert alert-danger position-fixed bottom-0 start-0 end-0 m-3';
-            errorDiv.innerHTML = `
-                <h5 class="alert-heading">Ошибка при обработке файла</h5>
-                <p>${message}</p>
-                <button type="button" class="btn btn-primary btn-sm mt-2" id="tryAgainBtn">
-                    <i class="bi bi-arrow-repeat me-1"></i> Повторить
-                </button>
-            `;
-            
-            document.body.appendChild(errorDiv);
-            
-            // Обработчик для кнопки "Повторить"
-            document.getElementById('tryAgainBtn').addEventListener('click', () => {
-                errorDiv.remove();
-                elements.actionButtons.style.display = 'flex';
-                logger.log('Повторная попытка обработки файла...');
-            });
+        // Показать индикатор обработки 
+        showProcessingIndicator: function() {
+            actionButtons.style.display = 'none';
+            processingIndicator.style.display = 'flex';
+        },
+        
+        // Скрыть индикатор обработки
+        hideProcessingIndicator: function() {
+            processingIndicator.style.display = 'none';
         }
     };
     
@@ -203,20 +143,20 @@
      */
     const ImageEditor = {
         init: function() {
-            if (!elements.imagePreview) {
+            if (!imagePreview) {
                 logger.error('Элемент предпросмотра изображения не найден');
                 return;
             }
             
             // Добавляем обработчики событий для перетаскивания
-            elements.imagePreview.addEventListener('pointerdown', this.startDrag);
+            imagePreview.addEventListener('pointerdown', this.startDrag);
             window.addEventListener('pointermove', this.drag);
             window.addEventListener('pointerup', this.endDrag);
             window.addEventListener('pointercancel', this.endDrag);
             
             // Добавляем обработчики для жестов масштабирования
-            elements.imagePreview.addEventListener('touchstart', this.handleTouchStart, { passive: false });
-            elements.imagePreview.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+            imagePreview.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+            imagePreview.addEventListener('touchmove', this.handleTouchMove, { passive: false });
             
             logger.log('Редактор изображений инициализирован');
         },
@@ -304,16 +244,16 @@
      */
     const VideoEditor = {
         init: function() {
-            if (!elements.videoPreview) {
+            if (!videoPreview) {
                 logger.error('Элемент предпросмотра видео не найден');
                 return;
             }
             
             // Обработчик события загрузки метаданных видео
-            elements.videoPreview.addEventListener('loadedmetadata', this.handleVideoLoaded);
+            videoPreview.addEventListener('loadedmetadata', this.handleVideoLoaded);
             
             // События видеоплеера
-            elements.videoPreview.addEventListener('timeupdate', this.handleTimeUpdate);
+            videoPreview.addEventListener('timeupdate', this.handleTimeUpdate);
             
             logger.log('Видеоредактор инициализирован');
         },
@@ -345,7 +285,7 @@
         },
         
         updateProgressBar: function() {
-            if (!elements.mobileProgressBar) {
+            if (!mobileProgressBar) {
                 logger.error('Элемент прогресс-бара не найден');
                 return;
             }
@@ -353,12 +293,12 @@
             const startPercent = (mediaState.videoStartTime / mediaState.videoDuration) * 100;
             const endPercent = (mediaState.videoEndTime / mediaState.videoDuration) * 100;
             
-            elements.mobileProgressBar.style.left = startPercent + '%';
-            elements.mobileProgressBar.style.width = (endPercent - startPercent) + '%';
+            mobileProgressBar.style.left = startPercent + '%';
+            mobileProgressBar.style.width = (endPercent - startPercent) + '%';
         },
         
         setupTrimControls: function() {
-            if (!elements.mobileStartHandle || !elements.mobileEndHandle) {
+            if (!mobileStartHandle || !mobileEndHandle) {
                 logger.error('Элементы управления обрезкой видео не найдены');
                 return;
             }
@@ -370,20 +310,20 @@
             }
             
             // Обработчики для начальной ручки
-            elements.mobileStartHandle.addEventListener('mousedown', function(e) {
+            mobileStartHandle.addEventListener('mousedown', function(e) {
                 VideoEditor.startDragHandle(e, 'start');
             });
             
-            elements.mobileStartHandle.addEventListener('touchstart', function(e) {
+            mobileStartHandle.addEventListener('touchstart', function(e) {
                 VideoEditor.startDragHandleTouch(e, 'start');
             }, { passive: false });
             
             // Обработчик для конечной ручки
-            elements.mobileEndHandle.addEventListener('mousedown', function(e) {
+            mobileEndHandle.addEventListener('mousedown', function(e) {
                 VideoEditor.startDragHandle(e, 'end');
             });
             
-            elements.mobileEndHandle.addEventListener('touchstart', function(e) {
+            mobileEndHandle.addEventListener('touchstart', function(e) {
                 VideoEditor.startDragHandleTouch(e, 'end');
             }, { passive: false });
             
@@ -395,13 +335,13 @@
             if (!mediaState.videoDuration) return;
             
             const rangeTrack = document.querySelector('.mobile-range-track');
-            mediaState.trackRect = rangeTrack.getBoundingClientRect();
+            const trackRect = rangeTrack.getBoundingClientRect();
             
             const startPercent = (mediaState.videoStartTime / mediaState.videoDuration) * 100;
             const endPercent = (mediaState.videoEndTime / mediaState.videoDuration) * 100;
             
-            elements.mobileStartHandle.style.left = startPercent + '%';
-            elements.mobileEndHandle.style.left = endPercent + '%';
+            mobileStartHandle.style.left = startPercent + '%';
+            mobileEndHandle.style.left = endPercent + '%';
             
             VideoEditor.updateProgressBar();
         },
@@ -468,9 +408,9 @@
             
             VideoEditor.updateHandles();
             
-            if (!mediaState.isPlaying && elements.videoPreview) {
+            if (!mediaState.isPlaying && videoPreview) {
                 try {
-                    elements.videoPreview.currentTime = mediaState.isDraggingStart ? mediaState.videoStartTime : mediaState.videoEndTime;
+                    videoPreview.currentTime = mediaState.isDraggingStart ? mediaState.videoStartTime : mediaState.videoEndTime;
                 } catch(e) {
                     logger.error('Ошибка при установке currentTime: ' + e.message);
                 }
@@ -495,7 +435,7 @@
     };
     
     /**
-     * Модуль для работы с AJAX-запросами
+     * Модуль для работы с AJAX запросами
      */
     const ApiService = {
         processMedia: function() {
@@ -541,12 +481,11 @@
                 }
             }
             
-            // Получаем CSRF-токен из мета-тега
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const processUrl = '/media/process'; // URL-путь к обработчику
             
             logger.log('Отправка запроса на сервер...');
-            
-            return fetch('/media/process', {
+            return fetch(processUrl, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -556,27 +495,59 @@
                 credentials: 'same-origin'
             })
             .then(response => {
+                // Получаем все заголовки для отладки
+                const headers = {};
+                response.headers.forEach((value, name) => {
+                    headers[name] = value;
+                });
+                
+                logger.log('Получен ответ от сервера', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: headers
+                });
+                
                 if (!response.ok) {
-                    // Улучшенная обработка ошибок сервера
-                    return response.text().then(text => {
-                        try {
-                            // Пытаемся распарсить как JSON
-                            const data = JSON.parse(text);
-                            throw new Error(data.error || `Ошибка сервера: ${response.status}`);
-                        } catch (e) {
-                            // Если не получается распарсить как JSON, возвращаем текст ошибки
-                            if (e instanceof SyntaxError) {
-                                throw new Error(`Ошибка сервера (${response.status}): Проверьте логи сервера`);
+                    // Проверяем тип содержимого ответа
+                    const contentType = response.headers.get('Content-Type');
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        // Если ответ в формате JSON, извлекаем детали ошибки
+                        return response.json().then(data => {
+                            logger.error('Ответ с ошибкой', data);
+                            
+                            // Проверяем наличие информации об установке FFmpeg
+                            if (data.install_required && data.error && data.error.includes('FFmpeg')) {
+                                throw new Error('FFmpeg не установлен. Для обработки видео требуется FFmpeg. Пожалуйста, обратитесь к администратору системы для установки FFmpeg.');
                             }
-                            throw e;
-                        }
-                    });
+                            
+                            throw new Error(data.error || `Ошибка HTTP: ${response.status}`);
+                        });
+                    } else {
+                        // Если ответ не в формате JSON, создаем общую ошибку
+                        return response.text().then(text => {
+                            logger.error('Ответ с ошибкой (текст)', text);
+                            throw new Error(`Ошибка HTTP: ${response.status}`);
+                        });
+                    }
                 }
+                
+                // Если ответ успешный, возвращаем распарсенный JSON
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
-                    logger.log('Файл успешно обработан');
+                    logger.log('Файл успешно обработан', data);
+                    
+                    // Вывод информации о сжатии, если она доступна
+                    if (data.compression_data) {
+                        const ratio = data.compression_data.compression_ratio;
+                        const originalSize = formatBytes(data.compression_data.original_size);
+                        const newSize = formatBytes(data.compression_data.new_size);
+                        
+                        logger.log(`Сжатие файла: с ${originalSize} до ${newSize} (уменьшение на ${ratio}%)`);
+                    }
+                    
                     return data;
                 } else {
                     throw new Error(data.error || 'Неизвестная ошибка сервера');
@@ -589,55 +560,8 @@
      * Модуль для работы с файлами
      */
     const FileHandler = {
-        setupEvents: function() {
-            // Обработчики событий для кнопок
-            elements.uploadBtn.addEventListener('click', () => {
-                logger.log('Кнопка выбора файла нажата');
-                elements.mediaFile.click();
-            });
-            
-            elements.mediaFile.addEventListener('change', this.handleFileSelect);
-            elements.saveBtn.addEventListener('click', MediaEditor.processMedia);
-            
-            // Добавляем поддержку drag-n-drop для загрузки файла
-            this.setupDragAndDrop();
-            
-            logger.log('Обработчики файлов настроены');
-        },
-        
-        handleFileSelect: function() {
-            if (!elements.mediaFile.files || elements.mediaFile.files.length === 0) {
-                logger.warn('Файл не выбран');
-                return;
-            }
-            
-            mediaState.currentFile = elements.mediaFile.files[0];
-            const fileUrl = URL.createObjectURL(mediaState.currentFile);
-            
-            logger.log(`Файл выбран: ${mediaState.currentFile.name}, тип: ${mediaState.currentFile.type}, размер: ${Math.round(mediaState.currentFile.size/1024)}KB`);
-            
-            // Определяем тип файла
-            if (mediaState.currentFile.type.startsWith('image/')) {
-                mediaState.fileType = 'image';
-                UI.hideUploadSection();
-                UI.showImageEditor(fileUrl);
-            } else if (mediaState.currentFile.type.startsWith('video/')) {
-                mediaState.fileType = 'video';
-                UI.hideUploadSection();
-                UI.showVideoEditor(fileUrl);
-            } else {
-                logger.error(`Неподдерживаемый тип файла: ${mediaState.currentFile.type}`);
-                alert('Неподдерживаемый тип файла. Пожалуйста, выберите изображение или видео.');
-                UI.reset();
-                return;
-            }
-            
-            elements.actionButtons.style.display = 'flex';
-            elements.editorContainer.classList.add('file-selected');
-        },
-        
         setupDragAndDrop: function() {
-            const dropZone = elements.editorContainer;
+            const dropZone = document.querySelector('.media-editor-container');
             
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, this.preventDefaults, false);
@@ -662,11 +586,11 @@
         },
         
         highlight: function() {
-            elements.uploadSection.classList.add('highlight');
+            uploadSection.classList.add('highlight');
         },
         
         unhighlight: function() {
-            elements.uploadSection.classList.remove('highlight');
+            uploadSection.classList.remove('highlight');
         },
         
         handleDrop: function(e) {
@@ -675,67 +599,204 @@
             const files = dt.files;
             
             if (files.length > 0) {
-                elements.mediaFile.files = files;
-                FileHandler.handleFileSelect();
+                mediaFile.files = files;
+                handleFileSelect();
             }
         }
     };
     
-    /**
-     * Основной объект редактора
-     */
-    const MediaEditor = {
-        init: function() {
-            logger.log('Инициализация редактора медиа...');
-            
-            // Инициализация элементов DOM
-            UI.initElements();
-            
-            // Проверяем наличие элементов интерфейса
-            if (!elements.uploadBtn || !elements.mediaFile) {
-                logger.error('Ошибка: Основные элементы не найдены');
-                return;
-            }
-            
-            // Настройка обработчиков файлов
-            FileHandler.setupEvents();
-            
-            // Инициализация редактирования изображения
-            ImageEditor.init();
-            
-            logger.log('Инициализация редактора медиа завершена');
-        },
+    // Форматирование размера файла для отображения
+    function formatBytes(bytes, decimals = 2) {
+        if (!bytes || bytes === 0) return '0 Байт';
         
-        processMedia: function() {
-            ApiService.processMedia()
-                .then(data => {
-                    if (data.redirect_url) {
-                        window.location.href = data.redirect_url;
-                    } else if (data.file_name) {
-                        // Резервный вариант - перенаправление на категории шаблонов
-                        // с передачей параметра имени файла
-                        window.location.href = '/client/templates/categories?file=' + encodeURIComponent(data.file_name);
-                    } else {
-                        // Запасной вариант, если не указан URL перенаправления
-                        window.location.href = '/client/templates/categories';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Байт', 'КБ', 'МБ', 'ГБ', 'ТБ'];
+        
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+    
+    // Обработка выбора файла
+    function handleFileSelect() {
+        if (!mediaFile.files || mediaFile.files.length === 0) {
+            logger.warn('Файл не выбран');
+            return;
+        }
+        
+        mediaState.currentFile = mediaFile.files[0];
+        const fileUrl = URL.createObjectURL(mediaState.currentFile);
+        
+        logger.log(`Файл выбран: ${mediaState.currentFile.name}, тип: ${mediaState.currentFile.type}, размер: ${Math.round(mediaState.currentFile.size/1024)}KB`);
+        
+        // Определяем тип файла
+        if (mediaState.currentFile.type.startsWith('image/')) {
+            mediaState.fileType = 'image';
+            UI.hideUploadSection();
+            UI.showImageEditor(fileUrl);
+        } else if (mediaState.currentFile.type.startsWith('video/')) {
+            mediaState.fileType = 'video';
+            UI.hideUploadSection();
+            UI.showVideoEditor(fileUrl);
+        } else {
+            logger.error(`Неподдерживаемый тип файла: ${mediaState.currentFile.type}`);
+            alert('Неподдерживаемый тип файла. Пожалуйста, выберите изображение или видео.');
+            UI.reset();
+            return;
+        }
+        
+        actionButtons.style.display = 'flex';
+        editorContainer.classList.add('file-selected');
+    }
+    
+    // Обработка события сохранения
+    function processMedia() {
+        ApiService.processMedia()
+            .then(data => {
+                if (data.redirect_url) {
+                    logger.log('Перенаправление на: ' + data.redirect_url);
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Если URL перенаправления не указан, используем резервный маршрут
+                    const templateId = mediaState.templateId || 1;
+                    const fallbackUrl = '/templates/create-new/' + templateId;
+                    logger.warn(`URL перенаправления не указан, используем резервный путь: ${fallbackUrl}`);
+                    window.location.href = fallbackUrl;
+                }
+            })
+            .catch(error => {
+                logger.error('Ошибка при отправке запроса: ' + error.message);
+                
+                UI.hideProcessingIndicator();
+                actionButtons.style.display = 'flex';
+                
+                // Создаем понятное и информативное сообщение об ошибке
+                const errorContainer = document.createElement('div');
+                errorContainer.className = 'error-container position-fixed w-100 top-0 start-0 p-3 d-flex justify-content-center';
+                errorContainer.style.zIndex = '9999';
+                
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'alert alert-danger d-flex flex-column p-3 shadow';
+                errorMessage.style.maxWidth = '500px';
+                
+                // Заголовок с иконкой
+                const errorHeader = document.createElement('div');
+                errorHeader.className = 'd-flex align-items-center mb-2';
+                errorHeader.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong class="me-auto">Ошибка при обработке файла</strong>
+                    <button type="button" class="btn-close ms-3" aria-label="Close"></button>
+                `;
+                
+                // Текст ошибки
+                const errorText = document.createElement('div');
+                errorText.className = 'mb-2';
+                errorText.textContent = error.message || 'Неизвестная ошибка';
+                
+                // Кнопки действий
+                const errorActions = document.createElement('div');
+                errorActions.className = 'd-flex gap-2 mt-2';
+                errorActions.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="tryAgainBtn">
+                        <i class="bi bi-arrow-repeat me-1"></i> Повторить
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary flex-fill" id="newFileBtn">
+                        <i class="bi bi-file-earmark-plus me-1"></i> Новый файл
+                    </button>
+                `;
+                
+                // Собираем сообщение
+                errorMessage.appendChild(errorHeader);
+                errorMessage.appendChild(errorText);
+                
+                // Если ошибка связана с FFmpeg, добавляем информацию
+                if (error.message.includes('FFmpeg')) {
+                    const ffmpegInfo = document.createElement('small');
+                    ffmpegInfo.className = 'text-muted';
+                    ffmpegInfo.textContent = 'Для обработки видео необходим FFmpeg. Обратитесь к администратору системы.';
+                    errorMessage.appendChild(ffmpegInfo);
+                }
+                
+                errorMessage.appendChild(errorActions);
+                errorContainer.appendChild(errorMessage);
+                document.body.appendChild(errorContainer);
+                
+                // Добавляем обработчики для кнопок
+                const closeBtn = errorMessage.querySelector('.btn-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        errorContainer.remove();
+                    });
+                }
+                
+                const tryAgainBtn = document.getElementById('tryAgainBtn');
+                if (tryAgainBtn) {
+                    tryAgainBtn.addEventListener('click', () => {
+                        errorContainer.remove();
+                        processMedia();
+                    });
+                }
+                
+                const newFileBtn = document.getElementById('newFileBtn');
+                if (newFileBtn) {
+                    newFileBtn.addEventListener('click', () => {
+                        errorContainer.remove();
+                        UI.reset();
+                    });
+                }
+                
+                // Автоматически удаляем сообщение через 30 секунд
+                setTimeout(() => {
+                    if (document.body.contains(errorContainer)) {
+                        errorContainer.classList.add('fade');
+                        setTimeout(() => {
+                            if (document.body.contains(errorContainer)) {
+                                errorContainer.remove();
+                            }
+                        }, 500);
                     }
-                })
-                .catch(error => {
-                    logger.error('Ошибка при отправке запроса: ' + error.message);
-                    UI.showError(error.message || 'Неизвестная ошибка');
-                });
-        }
-    };
+                }, 30000);
+            });
+    }
     
-    // Инициализация редактора при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        // Добавляем глобальную ссылку для доступа из других компонентов
-        window.mediaEditor = MediaEditor;
+    // Инициализация редактора
+    function init() {
+        logger.log('Инициализация редактора...');
         
-        // Экспортируем функцию processMedia для вызова из других скриптов
-        window.processMedia = MediaEditor.processMedia;
+        // Проверяем наличие элементов интерфейса
+        if (!uploadBtn || !mediaFile) {
+            logger.error('Ошибка: Основные элементы не найдены');
+            return;
+        }
         
-        // Запускаем инициализацию
-        MediaEditor.init();
-    });
-})();
+        // Обработчики событий для кнопок
+        uploadBtn.addEventListener('click', () => {
+            logger.log('Кнопка выбора файла нажата');
+            mediaFile.click();
+        });
+        
+        mediaFile.addEventListener('change', handleFileSelect);
+        
+        if (saveBtn) {
+            saveBtn.addEventListener('click', processMedia);
+        } else {
+            logger.error('Кнопка сохранения не найдена');
+        }
+        
+        // Добавляем поддержку drag-n-drop для загрузки файла
+        FileHandler.setupDragAndDrop();
+        
+        // Инициализация редактирования изображения
+        ImageEditor.init();
+        
+        logger.log('Инициализация завершена');
+    }
+    
+    // Экспортируем функцию processMedia для вызова из других скриптов (например, из мобильной навигации)
+    window.processMedia = processMedia;
+    
+    // Инициализация всей системы
+    init();
+});
+

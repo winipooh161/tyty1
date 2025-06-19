@@ -2,835 +2,771 @@
 
 namespace App\Services;
 
-use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\File;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Str;
+use Exception;
+use Symfony\Component\Process\Process;
 
 class MediaOptimizationService
 {
     /**
-     * Максимальные размеры для изображений
+     * Максимальные размеры для оптимизированных изображений
      */
-    protected $maxWidth = 1200;
-    protected $maxHeight = 1200;
+    const DEFAULT_MAX_WIDTH = 1200;
+    const DEFAULT_MAX_HEIGHT = 1200;
     
     /**
-     * Настройки качества сжатия изображений
+     * Качество сжатия по умолчанию
      */
-    protected $jpgQuality = 75;
-    protected $pngCompressionLevel = 6;
-    protected $webpQuality = 80;
-    protected $avifQuality = 65;
+    const DEFAULT_WEBP_QUALITY = 80;
+    const DEFAULT_JPEG_QUALITY = 85;
     
     /**
-     * Настройки качества сжатия видео
+     * Обработать медиафайл в зависимости от типа
+     * 
+     * @param string $filePath Путь к файлу
+     * @param string $fileType Тип файла ('image' или 'video')
+     * @param array $options Дополнительные опции для обработки
+     * @return array Результат обработки (успех, путь к обработанному файлу и т.д.)
      */
-    protected $videoPresets = [
-        'small' => [
-            'resolution' => '480:-2',      // 480p
-            'bitrate' => '500k',           // 500 кбит/с
-            'audio_bitrate' => '64k',      // 64 кбит/с аудио
-            'crf' => 30,                  // Более высокое значение = больше сжатие
-        ],
-        'medium' => [
-            'resolution' => '640:-2',      // 640p
-            'bitrate' => '1000k',          // 1 Мбит/с
-            'audio_bitrate' => '96k',      // 96 кбит/с аудио
-            'crf' => 28,                  // Стандартное сжатие
-        ],
-        'large' => [
-            'resolution' => '1280:-2',     // 720p
-            'bitrate' => '2500k',          // 2.5 Мбит/с
-            'audio_bitrate' => '128k',     // 128 кбит/с аудио
-            'crf' => 23,                  // Более низкое сжатие
-        ]
-    ];
-    
-    /**
-     * Поддерживаемые форматы изображений
-     */
-    protected $supportedImageFormats = [
-        'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'avif', 'heic', 'heif', 'svg'
-    ];
-    
-    /**
-     * Поддерживаемые форматы видео
-     */
-    protected $supportedVideoFormats = [
-        'mp4', 'webm', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'mpeg', 'mpg', 'm4v', '3gp'
-    ];
-    
-    /**
-     * Оптимизировать изображение
-     *
-     * @param \Illuminate\Http\UploadedFile|resource|string $image Загруженный файл или путь к файлу
-     * @param string $fileName Имя файла для сохранения
-     * @param bool $convertToWebp Конвертировать в WebP, если возможно
-     * @return string Имя сохраненного файла
-     */
-    public function optimizeImage($image, $fileName, $convertToWebp = true)
+    public function processMedia($filePath, $fileType, $options = [])
     {
         try {
-            // Создаём директорию для сохранения
-            $directory = storage_path('app/public/template_covers');
-            if (!File::isDirectory($directory)) {
-                File::makeDirectory($directory, 0755, true);
-            }
-            
-            $originalExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-            $outputPath = "{$directory}/{$fileName}";
-            
-            // Создаем изображение с помощью Intervention
-            if ($image instanceof UploadedFile) {
-                $img = Image::make($image->getRealPath());
-            } elseif (is_string($image) && file_exists($image)) {
-                $img = Image::make($image);
+            if ($fileType === 'image') {
+                return $this->processImage($filePath, $options);
+            } elseif ($fileType === 'video') {
+                return $this->processVideo($filePath, $options);
             } else {
-                $img = Image::make($image);
+                throw new Exception('Неподдерживаемый тип файла');
             }
+        } catch (Exception $e) {
+            Log::error('Ошибка при обработке медиафайла', [
+                'error' => $e->getMessage(),
+                'filePath' => $filePath,
+                'fileType' => $fileType,
+                'trace' => $e->getTraceAsString()
+            ]);
             
-            // Особая обработка для SVG файлов
-            if ($originalExtension === 'svg') {
-                // SVG - просто сохраняем как есть, без изменений
-                if ($image instanceof UploadedFile) {
-                    $image->move($directory, $fileName);
-                } elseif (is_string($image) && file_exists($image)) {
-                    File::copy($image, $outputPath);
-                } else {
-                    file_put_contents($outputPath, $image);
-                }
-                
-                Log::info('SVG файл сохранен без изменений', ['file' => $fileName]);
-                return $fileName;
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'file_path' => $filePath
+            ];
+        }
+    }
+
+    /**
+     * Обработать изображение (обрезка, масштабирование, поворот, преобразование в WebP)
+     * 
+     * @param string $filePath Путь к файлу
+     * @param array $options Опции обработки
+     * @return array Результат обработки
+     */
+    public function processImage($filePath, $options = [])
+    {
+        try {
+            // Проверяем, существует ли файл
+            if (!Storage::disk('public')->exists($filePath)) {
+                throw new Exception('Файл изображения не найден: ' . $filePath);
             }
+
+            // Полный путь к файлу
+            $fullPath = Storage::disk('public')->path($filePath);
+            
+            // Логируем параметры
+            Log::info('Обработка изображения', [
+                'filePath' => $filePath,
+                'fullPath' => $fullPath,
+                'exists' => file_exists($fullPath),
+                'filesize' => file_exists($fullPath) ? filesize($fullPath) : 'файл не существует',
+                'options' => $options
+            ]);
+            
+            // Получаем изображение
+            $img = Image::make($fullPath);
             
             // Получаем оригинальные размеры
             $originalWidth = $img->width();
             $originalHeight = $img->height();
             
-            // Изменяем размер изображения, не увеличивая его если оно меньше
-            if ($originalWidth > $this->maxWidth || $originalHeight > $this->maxHeight) {
-                $img->resize($this->maxWidth, $this->maxHeight, function($constraint) {
+            // Получаем данные о трансформации
+            $scale = $options['scale'] ?? 1;
+            $translateX = $options['x'] ?? 0;
+            $translateY = $options['y'] ?? 0;
+            $rotation = $options['rotation'] ?? 0;
+            
+            // Оптимальный размер для вывода
+            $maxWidth = $options['maxWidth'] ?? self::DEFAULT_MAX_WIDTH;
+            $maxHeight = $options['maxHeight'] ?? self::DEFAULT_MAX_HEIGHT;
+            
+            // Качество для WebP (по умолчанию - 80%)
+            $webpQuality = $options['webpQuality'] ?? self::DEFAULT_WEBP_QUALITY;
+            
+            // Принудительно конвертировать в WebP
+            $convertToWebP = $options['convertToWebP'] ?? true;
+            
+            // Создаем директорию для оптимизированных изображений
+            $optimizedDir = 'optimized/' . date('Y/m/d');
+            
+            // Проверяем существование директории и создаем её рекурсивно
+            if (!Storage::disk('public')->exists($optimizedDir)) {
+                Log::info('Создание директории для оптимизированных изображений', [
+                    'dir' => $optimizedDir
+                ]);
+                Storage::disk('public')->makeDirectory($optimizedDir);
+            }
+            
+            // Проверяем успешность создания директории
+            if (!Storage::disk('public')->exists($optimizedDir)) {
+                Log::error('Не удалось создать директорию для оптимизированных изображений', [
+                    'dir' => $optimizedDir,
+                    'storage_path' => Storage::disk('public')->path($optimizedDir)
+                ]);
+                throw new Exception('Не удалось создать директорию для сохранения изображения: ' . $optimizedDir);
+            }
+            
+            // Применяем трансформации
+            // Сначала масштабирование
+            if ($scale != 1) {
+                $newWidth = round($img->width() * $scale);
+                $newHeight = round($img->height() * $scale);
+                
+                // Применяем масштабирование из центра
+                $img->resize($newWidth, $newHeight, function ($constraint) {
                     $constraint->aspectRatio();
-                    $constraint->upsize();
+                });
+            }
+            
+            // Поворот
+            if ($rotation != 0) {
+                $img->rotate($rotation);
+            }
+            
+            // Преобразуем смещение из пикселей веб-интерфейса в пиксели изображения
+            $transformedWidth = $img->width();
+            $transformedHeight = $img->height();
+            
+            // Смещение с учетом центра изображения
+            $offsetX = ($translateX / $scale);
+            $offsetY = ($translateY / $scale);
+            
+            // Обрезаем изображение под нужный размер с учетом смещения
+            $canvas = Image::canvas($maxWidth, $maxHeight);
+            
+            // Центрирование с учетом смещения
+            $x = ($maxWidth - $transformedWidth) / 2 + $offsetX;
+            $y = ($maxHeight - $transformedHeight) / 2 + $offsetY;
+            
+            $canvas->insert($img, 'top-left', intval($x), intval($y));
+            
+            // Дополнительная оптимизация - если изображение слишком большое, уменьшаем его
+            // с сохранением пропорций до максимально допустимых размеров
+            if ($canvas->width() > $maxWidth || $canvas->height() > $maxHeight) {
+                $canvas->resize($maxWidth, $maxHeight, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize(); // Не увеличиваем маленькие изображения
                 });
                 
-                Log::info('Изображение изменено в размерах', [
-                    'file' => $fileName,
-                    'original' => "{$originalWidth}x{$originalHeight}",
-                    'new' => "{$img->width()}x{$img->height()}"
+                Log::info('Изображение уменьшено до оптимального размера', [
+                    'newWidth' => $canvas->width(),
+                    'newHeight' => $canvas->height(),
+                    'originalWidth' => $originalWidth,
+                    'originalHeight' => $originalHeight
                 ]);
             }
             
-            // Если нужно конвертировать в WebP, и исходный формат не WebP/AVIF
-            if ($convertToWebp && !in_array($originalExtension, ['webp', 'avif']) && $originalExtension !== 'svg') {
-                $newFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.webp';
-                $outputPath = "{$directory}/{$newFileName}";
+            // Создаем новое имя файла
+            $optimizedFileName = Str::random(8) . '_optimized';
+            
+            // Логируем информацию о сжатии
+            $originalSize = filesize($fullPath);
+            
+            // Если конвертировать в WebP и это поддерживается в PHP
+            if ($convertToWebP && function_exists('imagewebp')) {
+                $optimizedPath = $optimizedDir . '/' . $optimizedFileName . '.webp';
                 
-                // Сохраняем в WebP с заданным качеством
-                $img->encode('webp', $this->webpQuality);
-                $img->save($outputPath);
+                // Создаем директорию, если её нет (с учетом полного пути)
+                $outputDir = dirname(Storage::disk('public')->path($optimizedPath));
+                if (!is_dir($outputDir)) {
+                    Log::info('Создание директории для оптимизированных WebP изображений', [
+                        'dir' => $outputDir
+                    ]);
+                    
+                    // Создаем директорию с указанием прав доступа 0755
+                    if (!mkdir($outputDir, 0755, true)) {
+                        Log::error('Не удалось создать директорию', [
+                            'dir' => $outputDir,
+                            'error' => error_get_last()
+                        ]);
+                        throw new Exception('Не удалось создать директорию для сохранения изображения: ' . $outputDir);
+                    }
+                }
                 
-                Log::info('Изображение конвертировано в WebP', [
-                    'original_file' => $fileName,
-                    'new_file' => $newFileName,
-                    'quality' => $this->webpQuality
+                // Проверяем, что директория существует и доступна для записи
+                if (!is_dir($outputDir) || !is_writable($outputDir)) {
+                    Log::error('Директория недоступна для записи', [
+                        'dir' => $outputDir,
+                        'is_dir' => is_dir($outputDir),
+                        'is_writable' => is_writable($outputDir)
+                    ]);
+                    throw new Exception('Директория недоступна для записи: ' . $outputDir);
+                }
+                
+                $outputFilePath = Storage::disk('public')->path($optimizedPath);
+                
+                // Сохраняем изображение в WebP
+                Log::info('Сохранение изображения в WebP', [
+                    'filePath' => $optimizedPath,
+                    'fullPath' => $outputFilePath
                 ]);
                 
-                return $newFileName;
+                $canvas->encode('webp', $webpQuality)->save($outputFilePath);
+                
+                // Проверяем, что файл успешно сохранен
+                if (!file_exists($outputFilePath)) {
+                    Log::error('Файл WebP не был создан после сохранения', [
+                        'path' => $outputFilePath
+                    ]);
+                    throw new Exception('Не удалось сохранить изображение в формате WebP');
+                }
+                
+                $newSize = filesize($outputFilePath);
+                $compressionRatio = $originalSize > 0 ? round((1 - $newSize / $originalSize) * 100, 2) : 0;
+                
+                Log::info('Изображение сконвертировано в WebP и сжато', [
+                    'originalFormat' => pathinfo($filePath, PATHINFO_EXTENSION),
+                    'newFormat' => 'webp',
+                    'originalSize' => $originalSize,
+                    'newSize' => $newSize,
+                    'compressionRatio' => $compressionRatio . '%',
+                    'quality' => $webpQuality
+                ]);
+            } else {
+                // Если WebP не поддерживается, используем JPEG
+                $optimizedPath = $optimizedDir . '/' . $optimizedFileName . '.jpg';
+                
+                // Создаем директорию, если её нет (с учетом полного пути)
+                $outputDir = dirname(Storage::disk('public')->path($optimizedPath));
+                if (!is_dir($outputDir)) {
+                    Log::info('Создание директории для оптимизированных JPEG изображений', [
+                        'dir' => $outputDir
+                    ]);
+                    
+                    // Создаем директорию с указанием прав доступа 0755
+                    if (!mkdir($outputDir, 0755, true)) {
+                        Log::error('Не удалось создать директорию', [
+                            'dir' => $outputDir,
+                            'error' => error_get_last()
+                        ]);
+                        throw new Exception('Не удалось создать директорию для сохранения изображения: ' . $outputDir);
+                    }
+                }
+                
+                // Проверяем, что директория существует и доступна для записи
+                if (!is_dir($outputDir) || !is_writable($outputDir)) {
+                    Log::error('Директория недоступна для записи', [
+                        'dir' => $outputDir,
+                        'is_dir' => is_dir($outputDir),
+                        'is_writable' => is_writable($outputDir)
+                    ]);
+                    throw new Exception('Директория недоступна для записи: ' . $outputDir);
+                }
+                
+                $outputFilePath = Storage::disk('public')->path($optimizedPath);
+                
+                // Сохраняем изображение в JPEG
+                Log::info('Сохранение изображения в JPEG', [
+                    'filePath' => $optimizedPath,
+                    'fullPath' => $outputFilePath
+                ]);
+                
+                $canvas->encode('jpg', self::DEFAULT_JPEG_QUALITY)->save($outputFilePath);
+                
+                // Проверяем, что файл успешно сохранен
+                if (!file_exists($outputFilePath)) {
+                    Log::error('Файл JPEG не был создан после сохранения', [
+                        'path' => $outputFilePath
+                    ]);
+                    throw new Exception('Не удалось сохранить изображение в формате JPEG');
+                }
+                
+                $newSize = filesize($outputFilePath);
+                $compressionRatio = $originalSize > 0 ? round((1 - $newSize / $originalSize) * 100, 2) : 0;
+                
+                Log::info('Изображение сохранено в JPEG и сжато', [
+                    'originalFormat' => pathinfo($filePath, PATHINFO_EXTENSION),
+                    'newFormat' => 'jpg',
+                    'originalSize' => $originalSize,
+                    'newSize' => $newSize,
+                    'compressionRatio' => $compressionRatio . '%',
+                    'quality' => self::DEFAULT_JPEG_QUALITY
+                ]);
             }
             
-            // Оптимизируем в зависимости от формата
-            switch ($originalExtension) {
-                case 'jpg':
-                case 'jpeg':
-                    $img->encode('jpg', $this->jpgQuality);
-                    break;
-                    
-                case 'png':
-                    // Проверяем, содержит ли PNG прозрачность
-                    $hasTransparency = $this->checkImageTransparency($img);
-                    if (!$hasTransparency) {
-                        // Если нет прозрачности, конвертируем в JPG с белым фоном для лучшего сжатия
-                        $img->encode('jpg', $this->jpgQuality);
-                        $newFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.jpg';
-                        $outputPath = $directory . '/' . $newFileName;
-                        Log::info('PNG без прозрачности конвертирован в JPG', ['file' => $newFileName]);
-                        $fileName = $newFileName;
-                    } else {
-                        // PNG с прозрачностью, оптимизируем как PNG
-                        $img->encode('png', $this->pngCompressionLevel * 10);
-                    }
-                    break;
-                    
-                case 'gif':
-                    // Проверяем, является ли GIF анимированным
-                    if ($this->isAnimatedGif($image instanceof UploadedFile ? $image->getRealPath() : $image)) {
-                        // Для анимированных GIF просто сохраняем как есть
-                        if ($image instanceof UploadedFile) {
-                            $image->move($directory, $fileName);
-                        } else {
-                            file_put_contents($outputPath, $image instanceof UploadedFile ? file_get_contents($image->getRealPath()) : $image);
-                        }
-                        Log::info('Анимированный GIF сохранен без изменений', ['file' => $fileName]);
-                        return $fileName;
-                    }
-                    // Для статичных GIF конвертируем в PNG
-                    $img->encode('png', $this->pngCompressionLevel * 10);
-                    break;
-                    
-                case 'webp':
-                    $img->encode('webp', $this->webpQuality);
-                    break;
-                    
-                case 'avif':
-                    // Если библиотека поддерживает AVIF
-                    if (method_exists($img, 'avif') || method_exists($img, 'encode') && in_array('avif', $img->getDrivers())) {
-                        $img->encode('avif', $this->avifQuality);
-                    } else {
-                        // Если AVIF не поддерживается, конвертируем в WebP
-                        $img->encode('webp', $this->webpQuality);
-                        $newFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.webp';
-                        $outputPath = $directory . '/' . $newFileName;
-                        Log::info('AVIF конвертирован в WebP из-за отсутствия поддержки', ['file' => $newFileName]);
-                        $fileName = $newFileName;
-                    }
-                    break;
-                
-                case 'bmp':
-                case 'tiff':
-                case 'tif': 
-                    // Конвертируем эти форматы в JPG для лучшего сжатия
-                    $img->encode('jpg', $this->jpgQuality);
-                    $newFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.jpg';
-                    $outputPath = $directory . '/' . $newFileName;
-                    Log::info('Формат конвертирован в JPG для сжатия', [
-                        'original' => $originalExtension, 
-                        'file' => $newFileName
-                    ]);
-                    $fileName = $newFileName;
-                    break;
-                
-                case 'heic':
-                case 'heif':
-                    // Конвертируем в WebP, так как поддержка HEIC/HEIF ограничена
-                    $img->encode('webp', $this->webpQuality);
-                    $newFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.webp';
-                    $outputPath = $directory . '/' . $newFileName;
-                    Log::info('HEIC/HEIF конвертирован в WebP', ['file' => $newFileName]);
-                    $fileName = $newFileName;
-                    break;
-                
-                default:
-                    // Для неизвестных форматов конвертируем в JPG
-                    $img->encode('jpg', $this->jpgQuality);
-                    $newFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.jpg';
-                    $outputPath = $directory . '/' . $newFileName;
-                    Log::info('Неизвестный формат конвертирован в JPG', ['file' => $newFileName]);
-                    $fileName = $newFileName;
+            return [
+                'success' => true,
+                'file_path' => $optimizedPath,
+                'full_path' => Storage::disk('public')->url($optimizedPath),
+                'width' => $canvas->width(),
+                'height' => $canvas->height(),
+                'original_size' => $originalSize ?? 0,
+                'new_size' => $newSize ?? 0,
+                'compression_ratio' => $compressionRatio ?? 0
+            ];
+        } catch (Exception $e) {
+            Log::error('Ошибка при обработке изображения', [
+                'error' => $e->getMessage(),
+                'file' => $filePath,
+                'trace' => $e->getTraceAsString(),
+                'file_line' => $e->getFile() . ':' . $e->getLine()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'file_path' => $filePath
+            ];
+        }
+    }
+
+    /**
+     * Проверить наличие FFmpeg в системе и вернуть путь к исполняемому файлу
+     * 
+     * @return string|bool Путь к FFmpeg или false, если не установлен
+     */
+    public function getFFmpegPath()
+    {
+        // Сначала проверяем локальную установку в папке storage
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $localPath = $isWindows 
+            ? storage_path('ffmpeg/bin/ffmpeg.exe')
+            : storage_path('ffmpeg/bin/ffmpeg');
+        
+        if (file_exists($localPath)) {
+            return $localPath;
+        }
+        
+        // Если локальной установки нет, проверяем глобальную
+        try {
+            $command = $isWindows ? 'where ffmpeg' : 'which ffmpeg';
+            $process = Process::fromShellCommandline($command);
+            $process->run();
+            
+            if ($process->isSuccessful()) {
+                $output = trim($process->getOutput());
+                if (file_exists($output)) {
+                    return $output;
+                }
+            }
+        } catch (Exception $e) {
+            Log::warning('Ошибка при поиске FFmpeg: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Проверить наличие FFprobe в системе и вернуть путь к исполняемому файлу
+     * 
+     * @return string|bool Путь к FFprobe или false, если не установлен
+     */
+    public function getFFprobePath()
+    {
+        // Сначала проверяем локальную установку в папке storage
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $localPath = $isWindows 
+            ? storage_path('ffmpeg/bin/ffprobe.exe')
+            : storage_path('ffmpeg/bin/ffprobe');
+        
+        if (file_exists($localPath)) {
+            return $localPath;
+        }
+        
+        // Если локальной установки нет, проверяем глобальную
+        try {
+            $command = $isWindows ? 'where ffprobe' : 'which ffprobe';
+            $process = Process::fromShellCommandline($command);
+            $process->run();
+            
+            if ($process->isSuccessful()) {
+                $output = trim($process->getOutput());
+                if (file_exists($output)) {
+                    return $output;
+                }
+            }
+        } catch (Exception $e) {
+            Log::warning('Ошибка при поиске FFprobe: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Проверить наличие FFmpeg в системе
+     * 
+     * @return bool
+     */
+    public function checkFFmpeg()
+    {
+        return (bool)$this->getFFmpegPath();
+    }
+
+    /**
+     * Обработать видео (обрезка по длительности и сжатие)
+     * 
+     * @param string $filePath Путь к файлу
+     * @param array $options Опции обработки
+     * @return array Результат обработки
+     */
+    public function processVideo($filePath, $options = [])
+    {
+        try {
+            // Проверяем, существует ли файл
+            if (!Storage::disk('public')->exists($filePath)) {
+                throw new Exception('Файл видео не найден: ' . $filePath);
+            }
+
+            // Получаем путь к FFmpeg
+            $ffmpegPath = $this->getFFmpegPath();
+            
+            // Проверяем наличие FFmpeg в системе
+            if (!$ffmpegPath) {
+                throw new Exception('FFmpeg не установлен в системе. Установите его вручную или выполните команду: php artisan install:ffmpeg');
+            }
+
+            // Полный путь к исходному файлу
+            $inputPath = Storage::disk('public')->path($filePath);
+            
+            // Определяем временные отрезки для обрезки
+            $startTime = isset($options['start_time']) ? floatval($options['start_time']) : 0;
+            $endTime = isset($options['end_time']) ? floatval($options['end_time']) : 15;
+            $duration = $endTime - $startTime;
+            
+            // Максимальная длительность 15 секунд
+            $duration = min($duration, 15);
+            
+            // Создаем новое имя файла для обработанного видео
+            $processedDir = 'processed_videos/' . date('Y/m/d');
+            $processedPath = $processedDir . '/' . Str::random(8) . '_processed.mp4';
+            
+            // Создаем директорию, если её нет
+            $outputDir = dirname(Storage::disk('public')->path($processedPath));
+            if (!file_exists($outputDir)) {
+                mkdir($outputDir, 0755, true);
             }
             
-            // Сохраняем оптимизированное изображение
-            $img->save($outputPath);
+            // Полный путь для выходного файла
+            $outputPath = Storage::disk('public')->path($processedPath);
             
-            // Дополнительная оптимизация крупных файлов
-            $fileSize = filesize($outputPath);
-            if ($fileSize > 500 * 1024) { // Если больше 500KB
-                $currentExtension = strtolower(pathinfo($outputPath, PATHINFO_EXTENSION));
-                
-                if ($currentExtension === 'jpg' || $currentExtension === 'jpeg') {
-                    // Повторно сохраняем с более низким качеством
-                    $img = Image::make($outputPath);
-                    $img->save($outputPath, $this->jpgQuality - 10);
-                    Log::info('Крупное JPG повторно сжато с пониженным качеством', [
-                        'file' => $fileName,
-                        'original_size' => round($fileSize / 1024) . 'KB',
-                        'new_size' => round(filesize($outputPath) / 1024) . 'KB'
-                    ]);
-                } elseif ($currentExtension === 'png') {
-                    // Используем pngquant для дополнительной оптимизации PNG, если он доступен
-                    if ($this->checkToolInstalled('pngquant')) {
-                        $this->optimizePngWithPngquant($outputPath);
-                    }
+            // Логируем оригинальный размер файла
+            $originalSize = filesize($inputPath);
+            
+            // Получаем информацию о видео для оптимального сжатия
+            $videoInfo = $this->getVideoInfo($filePath);
+            
+            // Настройки качества видео
+            $videoWidth = $options['width'] ?? ($videoInfo['width'] ?? 720);
+            
+            // Если видео слишком большое, уменьшаем разрешение
+            if ($videoWidth > 1280) {
+                $videoWidth = 1280; // Максимальная ширина для мобильного оптимизированного видео
+            }
+            
+            $videoHeight = $options['height'] ?? 0; // 0 - автоматический расчет
+            
+            // Настраиваем битрейт в зависимости от размера видео
+            $defaultBitrate = $this->calculateOptimalBitrate($videoWidth, $videoHeight ?: ($videoInfo['height'] ?? 0));
+            $videoBitrate = $options['bitrate'] ?? $defaultBitrate;
+            
+            // Формируем команду для FFmpeg с оптимизацией
+            $ffmpegCmd = escapeshellcmd($ffmpegPath);
+            $inputPathEscaped = escapeshellarg($inputPath);
+            $outputPathEscaped = escapeshellarg($outputPath);
+            
+            $command = "{$ffmpegCmd} -y -i {$inputPathEscaped} -ss {$startTime} -t {$duration} " .
+                      "-c:v libx264 -preset medium -b:v {$videoBitrate} -pix_fmt yuv420p ";
+            
+            // Добавляем параметры размера, если указаны
+            if ($videoWidth > 0) {
+                if ($videoHeight > 0) {
+                    $command .= "-vf \"scale={$videoWidth}:{$videoHeight}\" ";
+                } else {
+                    $command .= "-vf \"scale={$videoWidth}:-2\" ";
                 }
             }
             
-            Log::info('Изображение оптимизировано', [
-                'file' => $fileName,
-                'size' => round(filesize($outputPath) / 1024) . 'KB',
-                'format' => pathinfo($outputPath, PATHINFO_EXTENSION)
+            // Добавляем параметры для аудио - сжимаем и оптимизируем
+            $command .= "-c:a aac -b:a 96k -ar 44100 -strict experimental {$outputPathEscaped} 2>&1";
+            
+            // Логируем команду для отладки
+            Log::info('FFmpeg команда: ' . $command);
+            
+            // Выполняем команду
+            $output = [];
+            $returnVar = 0;
+            exec($command, $output, $returnVar);
+            
+            // Проверяем результат выполнения
+            if ($returnVar !== 0) {
+                throw new Exception('Ошибка при выполнении FFmpeg: ' . implode("\n", $output));
+            }
+            
+            // Проверяем, создался ли файл
+            if (!file_exists($outputPath)) {
+                throw new Exception('Файл не был создан после обработки');
+            }
+            
+            // Логируем результаты сжатия
+            $newSize = filesize($outputPath);
+            $compressionRatio = $originalSize > 0 ? round((1 - $newSize / $originalSize) * 100, 2) : 0;
+            
+            Log::info('Видео успешно сжато', [
+                'originalSize' => $originalSize,
+                'newSize' => $newSize,
+                'compressionRatio' => $compressionRatio . '%',
+                'bitrate' => $videoBitrate,
+                'resolution' => $videoWidth . 'x' . ($videoHeight ?: 'auto')
             ]);
             
-            return pathinfo($outputPath, PATHINFO_BASENAME);
-        } catch (\Exception $e) {
-            Log::error('Ошибка при оптимизации изображения: ' . $e->getMessage(), [
-                'file' => $fileName,
+            return [
+                'success' => true,
+                'file_path' => $processedPath,
+                'full_path' => Storage::disk('public')->url($processedPath),
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'duration' => $duration,
+                'original_size' => $originalSize,
+                'new_size' => $newSize,
+                'compression_ratio' => $compressionRatio,
+                'width' => $videoWidth,
+                'height' => $videoHeight ?: ($videoInfo['height'] ?? 'auto')
+            ];
+        } catch (Exception $e) {
+            Log::error('Ошибка при обработке видео', [
+                'error' => $e->getMessage(),
+                'file' => $filePath,
                 'trace' => $e->getTraceAsString()
             ]);
-            throw $e;
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'file_path' => $filePath
+            ];
         }
     }
-    
+
     /**
-     * Оптимизировать видео
-     *
-     * @param \Illuminate\Http\UploadedFile $file Загруженный файл
-     * @param string $fileName Имя файла для сохранения
-     * @param float|null $startTime Время начала видео в секундах
-     * @param float|null $endTime Время конца видео в секундах
-     * @param string $quality Качество видео (small, medium, large)
-     * @return string Имя сохраненного файла
+     * Рассчитать оптимальный битрейт для видео в зависимости от разрешения
+     * 
+     * @param int $width Ширина видео
+     * @param int $height Высота видео
+     * @return string Битрейт в формате '1000k'
      */
-    public function optimizeVideo($file, $fileName, $startTime = null, $endTime = null, $quality = 'medium')
+    private function calculateOptimalBitrate($width, $height)
+    {
+        // Расчет битрейта по формуле, оптимизированной для мобильных устройств
+        $pixelCount = $width * ($height ?: $width / 1.78); // Если высота не указана, предполагаем пропорцию 16:9
+        
+        if ($pixelCount <= 0) {
+            return '800k'; // Значение по умолчанию
+        }
+        
+        // Формула для расчета битрейта (кбит/с) в зависимости от количества пикселей
+        // Для мобильных устройств используем более агрессивное сжатие
+        if ($pixelCount <= 409600) { // 640x640 и меньше
+            $bitrate = round($pixelCount / 900);
+        } elseif ($pixelCount <= 921600) { // 1280x720 и меньше
+            $bitrate = round($pixelCount / 1200);
+        } else { // Выше 720p
+            $bitrate = round($pixelCount / 1500);
+        }
+        
+        // Ограничения битрейта
+        $bitrate = max(500, min(2500, $bitrate));
+        
+        return $bitrate . 'k';
+    }
+
+    /**
+     * Получить информацию о видео для оптимального сжатия
+     * 
+     * @param string $filePath Путь к файлу
+     * @return array Информация о видео
+     */
+    private function getVideoInfo($filePath)
     {
         try {
-            // Создаём директорию для сохранения
-            $directory = storage_path('app/public/template_covers');
-            if (!File::isDirectory($directory)) {
-                File::makeDirectory($directory, 0755, true);
+            $inputPath = Storage::disk('public')->path($filePath);
+            $ffprobePath = $this->getFFprobePath();
+            
+            if (!$ffprobePath) {
+                return ['width' => 720, 'height' => 0]; // Значения по умолчанию
             }
             
-            $outputPath = $directory . '/' . $fileName;
-            $originalExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            // Получаем информацию о ширине и высоте видео
+            $ffprobeCmd = escapeshellcmd($ffprobePath);
+            $inputPathEscaped = escapeshellarg($inputPath);
             
-            // Проверяем наличие FFmpeg
-            if (!$this->checkFFmpegInstalled()) {
-                // Если FFmpeg не установлен, просто копируем файл
-                if ($file instanceof UploadedFile) {
-                    $file->move($directory, $fileName);
-                } else {
-                    copy($file, $outputPath);
-                }
-                
-                Log::warning('FFmpeg не установлен. Файл сохранен без оптимизации', [
-                    'file' => $fileName
-                ]);
-                
-                return $fileName;
-            }
-            
-            // Временный файл для исходного видео
-            $tempPath = $file instanceof UploadedFile ? $file->getRealPath() : $file;
-            $tempDir = sys_get_temp_dir();
-            $tempPrefix = 'video_processing_' . time() . '_';
-            
-            // Создаём уникальные имена для временных файлов
-            $tempTrimmedPath = $tempDir . '/' . $tempPrefix . 'trimmed.mp4';
-            
-            // Получаем информацию о файле
-            $fileSize = $file instanceof UploadedFile ? $file->getSize() : filesize($tempPath);
-            $fileSizeMB = $fileSize / (1024 * 1024);
-            
-            Log::info('Исходное видео:', [
-                'размер' => round($fileSizeMB, 2) . ' MB',
-                'путь' => $tempPath,
-                'расширение' => $originalExtension
-            ]);
-            
-            // Экранируем пути для безопасного использования в командах
-            $escapedTempPath = escapeshellarg($tempPath);
-            $escapedOutputPath = escapeshellarg($outputPath);
-            $escapedTrimmedPath = escapeshellarg($tempTrimmedPath);
-            
-            // Получаем информацию о видео
-            $videoInfo = $this->getVideoInfoDetailed($tempPath);
-            $videoDuration = $videoInfo['duration'] ?? 0;
-            
-            Log::info('Информация о видео:', [
-                'длительность' => $videoDuration,
-                'ширина' => $videoInfo['width'],
-                'высота' => $videoInfo['height'],
-                'начальное_время' => $startTime,
-                'конечное_время' => $endTime
-            ]);
-            
-            // Определяем параметры обрезки
-            $shouldTrim = false;
-            $startTimeFloat = is_numeric($startTime) ? (float)$startTime : 0;
-            $endTimeFloat = is_numeric($endTime) ? (float)$endTime : min($videoDuration, 15);
-            
-            // Проверяем валидность параметров для обрезки
-            if ($startTimeFloat >= 0 && $startTimeFloat < $endTimeFloat && $endTimeFloat <= $videoDuration) {
-                $shouldTrim = true;
-                // Ограничиваем длину видео 15 секундами если не указано конкретное значение
-                if (!is_numeric($endTime) && $videoDuration > 15) {
-                    $endTimeFloat = $startTimeFloat + 15;
-                }
-            } else if ($videoDuration > 15) {
-                // Если видео длиннее 15 секунд, обрезаем его автоматически
-                $startTimeFloat = 0;
-                $endTimeFloat = 15;
-                $shouldTrim = true;
-            }
-            
-            if ($shouldTrim) {
-                Log::info('Применяется обрезка видео', [
-                    'начало' => $startTimeFloat,
-                    'конец' => $endTimeFloat,
-                    'длительность' => $endTimeFloat - $startTimeFloat
-                ]);
-            }
-            
-            // Выбираем пресет качества
-            if (!isset($this->videoPresets[$quality])) {
-                $quality = 'medium'; // Безопасное значение по умолчанию
-            }
-            $preset = $this->videoPresets[$quality];
-            
-            // **ПЕРВЫЙ ЭТАП: ОБРЕЗКА** - сначала делаем обрезку отдельной командой
-            if ($shouldTrim) {
-                // ВАЖНО: правильный порядок параметров для точной обрезки
-                // -ss перед -i для быстрого поиска и точной обрезки начала
-                $trimCmd = "ffmpeg -y -ss " . number_format($startTimeFloat, 3, '.', '') .
-                         " -i {$escapedTempPath}" .
-                         " -t " . number_format($endTimeFloat - $startTimeFloat, 3, '.', '') .
-                         " -c copy {$escapedTrimmedPath}";
-                
-                Log::info('Выполняется команда обрезки:', ['command' => $trimCmd]);
-                
-                $output = [];
-                $returnVar = null;
-                exec($trimCmd . " 2>&1", $output, $returnVar);
-                
-                if ($returnVar === 0 && file_exists($tempTrimmedPath)) {
-                    // Успешная обрезка - используем обрезанное видео для следующих шагов
-                    Log::info('Видео успешно обрезано');
-                    
-                    // Проверим длительность полученного файла
-                    $trimmedInfo = $this->getVideoInfoDetailed($tempTrimmedPath);
-                    Log::info('Длительность обрезанного видео: ' . ($trimmedInfo['duration'] ?? 'неизвестно'));
-                    
-                    // Теперь используем обрезанное видео как источник для кодирования
-                    $inputPath = $tempTrimmedPath;
-                    $escapedInputPath = $escapedTrimmedPath;
-                } else {
-                    // Ошибка обрезки - используем оригинальное видео
-                    Log::warning('Не удалось обрезать видео отдельной командой. Используем исходное видео.');
-                    $inputPath = $tempPath;
-                    $escapedInputPath = $escapedTempPath;
-                    
-                    // Логируем ошибку для отладки
-                    Log::error('Ошибка обрезки:', [
-                        'код_возврата' => $returnVar, 
-                        'вывод' => implode("\n", $output)
-                    ]);
-                }
-            } else {
-                // Обрезка не требуется
-                $inputPath = $tempPath;
-                $escapedInputPath = $escapedTempPath;
-            }
-            
-            // **ВТОРОЙ ЭТАП: КОДИРОВАНИЕ И СЖАТИЕ**
-            // Формируем команду кодирования без дополнительных параметров обрезки
-            $encodingCmd = "ffmpeg -y -i {$escapedInputPath}" .
-                         " -c:v libx264" .
-                         " -preset medium" .  // Используем 'medium' как надежный вариант
-                         " -vf scale={$preset['resolution']}" .
-                         " -crf {$preset['crf']}" .
-                         " -maxrate {$preset['bitrate']}" .
-                         " -bufsize " . (intval(str_replace('k', '', $preset['bitrate'])) * 2) . "k" .
-                         " -profile:v baseline" .
-                         " -level 3.0" .
-                         " -pix_fmt yuv420p" .
-                         " -movflags +faststart" .
-                         " -c:a aac" .
-                         " -b:a {$preset['audio_bitrate']}" .
-                         " -ac 2" .
-                         " {$escapedOutputPath}";
-            
-            Log::info('Выполняется кодирование видео:', ['command' => $encodingCmd]);
+            $command = "{$ffprobeCmd} -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 {$inputPathEscaped} 2>&1";
             
             $output = [];
-            $returnVar = null;
-            exec($encodingCmd . " 2>&1", $output, $returnVar);
+            $returnVar = 0;
+            exec($command, $output, $returnVar);
             
-            if ($returnVar !== 0) {
-                Log::error('Ошибка кодирования:', ['вывод' => implode("\n", $output)]);
-                
-                // Пробуем запасной вариант с более простыми параметрами
-                $fallbackCmd = "ffmpeg -y -i {$escapedInputPath}" .
-                             " -c:v libx264" .
-                             " -vf scale={$preset['resolution']}" .
-                             " -crf " . ($preset['crf'] + 4) .
-                             " -preset ultrafast" .
-                             " -c:a aac" .
-                             " -b:a 64k" .
-                             " {$escapedOutputPath}";
-                
-                Log::info('Пробуем запасной вариант кодирования:', ['command' => $fallbackCmd]);
-                
-                $output = [];
-                $returnVar = null;
-                exec($fallbackCmd . " 2>&1", $output, $returnVar);
-                
-                if ($returnVar !== 0) {
-                    // Если и запасной вариант не сработал, возвращаемся к обрезанному или исходному видео
-                    Log::error('Запасной вариант кодирования не сработал:', ['вывод' => implode("\n", $output)]);
-                    
-                    // Последняя попытка - простое копирование
-                    if ($shouldTrim && file_exists($tempTrimmedPath)) {
-                        // Используем обрезанное видео без перекодирования
-                        copy($tempTrimmedPath, $outputPath);
-                        Log::info('Скопировано обрезанное видео без перекодирования');
-                    } else {
-                        // Последняя надежда - просто скопировать исходной файл
-                        if ($file instanceof UploadedFile) {
-                            $file->move($directory, $fileName);
-                        } else {
-                            copy($file, $outputPath);
-                        }
-                        Log::warning('Скопирован исходный файл из-за ошибок кодирования');
-                    }
-                }
+            if ($returnVar !== 0 || empty($output)) {
+                Log::warning('Не удалось получить информацию о видео: ' . implode("\n", $output));
+                return ['width' => 720, 'height' => 0]; // Значения по умолчанию
             }
             
-            // Очистка временных файлов
-            if (file_exists($tempTrimmedPath)) {
-                unlink($tempTrimmedPath);
-                Log::info('Удален временный файл: ' . $tempTrimmedPath);
-            }
+            // Парсим вывод (например, "1920x1080")
+            $dimensions = explode('x', $output[0]);
             
-            // Проверяем результат
-            if (file_exists($outputPath)) {
-                $outputSize = filesize($outputPath);
-                $outputSizeMB = $outputSize / (1024 * 1024);
-                
-                Log::info('Результат обработки видео:', [
-                    'файл' => $fileName,
-                    'исходный_размер' => round($fileSizeMB, 2) . ' MB',
-                    'итоговый_размер' => round($outputSizeMB, 2) . ' MB',
-                    'процент_сжатия' => round(($outputSize / $fileSize) * 100, 1) . '%'
-                ]);
-                
-                // Проверяем длительность итогового видео
-                $finalInfo = $this->getVideoInfoDetailed($outputPath);
-                $finalDuration = $finalInfo['duration'] ?? 0;
-                
-                Log::info('Итоговая длительность видео: ' . round($finalDuration, 2) . 'с');
-                
-                // Если файл слишком большой, применяем экстремальное сжатие
-                if ($outputSizeMB > 5) {
-                    return $this->applyExtremeCompression($outputPath, $fileName, $directory);
-                }
-            } else {
-                Log::error('Выходной файл не найден после обработки: ' . $outputPath);
-                
-                // Копируем обрезанное/оригинальное видео как запасной вариант
-                if ($shouldTrim && file_exists($tempTrimmedPath)) {
-                    copy($tempTrimmedPath, $outputPath);
-                } else if ($file instanceof UploadedFile) {
-                    $file->move($directory, $fileName);
-                } else {
-                    copy($file, $outputPath);
-                }
-            }
-            
-            return $fileName;
-            
-        } catch (\Exception $e) {
-            Log::error('Ошибка при оптимизации видео: ' . $e->getMessage(), [
-                'файл' => $fileName,
-                'трассировка' => $e->getTraceAsString()
+            return [
+                'width' => (int)($dimensions[0] ?? 720),
+                'height' => (int)($dimensions[1] ?? 0)
+            ];
+        } catch (Exception $e) {
+            Log::error('Ошибка при получении информации о видео', [
+                'error' => $e->getMessage(),
+                'file' => $filePath
             ]);
-            throw $e;
+            
+            return ['width' => 720, 'height' => 0]; // Значения по умолчанию
         }
     }
-    
+
     /**
-     * Применяет экстремальное сжатие для больших видеофайлов
-     *
-     * @param string $inputFilePath Путь к файлу для сжатия
-     * @param string $fileName Имя файла
-     * @param string $directory Директория для сохранения
-     * @return string Имя сохраненного файла
+     * Создать миниатюру из видео
+     * 
+     * @param string $videoPath Путь к видео
+     * @param float $timeOffset Время в секундах для создания миниатюры
+     * @return string|null Путь к миниатюре или null в случае ошибки
      */
-    private function applyExtremeCompression($inputFilePath, $fileName, $directory)
+    public function createVideoThumbnail($videoPath, $timeOffset = 0)
     {
         try {
-            Log::info('Применяем экстремальное сжатие видео', ['file' => $fileName]);
+            // Проверяем, существует ли файл
+            if (!Storage::disk('public')->exists($videoPath)) {
+                throw new Exception('Файл видео не найден: ' . $videoPath);
+            }
             
-            $tempFileName = 'extreme_' . $fileName;
-            $tempPath = $directory . '/' . $tempFileName;
-            $escapedInputPath = escapeshellarg($inputFilePath);
-            $escapedTempPath = escapeshellarg($tempPath);
+            // Получаем путь к FFmpeg
+            $ffmpegPath = $this->getFFmpegPath();
             
-            // Экстремальное сжатие: низкое разрешение, высокий CRF, сильное сжатие аудио
-            $extremeCmd = "ffmpeg -i {$escapedInputPath}" .
-                         " -vf scale=480:-2" .  // 480p или меньше
-                         " -c:v libx264" .
-                         " -preset slow" .      // Медленное кодирование для лучшего сжатия
-                         " -crf 34" .           // Очень высокое сжатие
-                         " -maxrate 300k" .     // Очень низкий битрейт
-                         " -bufsize 600k" .
-                         " -profile:v baseline" .
-                         " -level 3.0" .
-                         " -pix_fmt yuv420p" .
-                         " -movflags +faststart" .
-                         " -c:a aac" .
-                         " -b:a 32k" .          // Минимальный битрейт аудио
-                         " -ac 1" .             // Моно звук
-                         " -y {$escapedTempPath}";
+            // Проверяем наличие FFmpeg
+            if (!$ffmpegPath) {
+                throw new Exception('FFmpeg не установлен в системе');
+            }
+
+            $inputPath = Storage::disk('public')->path($videoPath);
             
-            Log::info('Команда экстремального сжатия:', ['command' => $extremeCmd]);
-            exec($extremeCmd, $output, $returnVar);
+            // Создаем имя для миниатюры, используем WebP для лучшего сжатия
+            $thumbnailDir = 'thumbnails/' . date('Y/m/d');
+            $thumbnailPath = $thumbnailDir . '/' . Str::random(8) . '_thumb.webp';
             
-            if ($returnVar === 0 && file_exists($tempPath)) {
-                $originalSize = filesize($inputFilePath);
-                $newSize = filesize($tempPath);
-                $compressionRatio = $originalSize > 0 ? ($newSize / $originalSize) * 100 : 100;
-                
-                Log::info('Результат экстремального сжатия:', [
-                    'original_file' => $fileName,
-                    'original_size' => round($originalSize / (1024 * 1024), 2) . 'MB',
-                    'new_size' => round($newSize / (1024 * 1024), 2) . 'MB',
-                    'compression_ratio' => round($compressionRatio, 1) . '%'
-                ]);
-                
-                // Если экстремальное сжатие дало результат, заменяем исходный файл
-                if ($newSize < $originalSize * 0.9) { // Как минимум 10% экономии
-                    unlink($inputFilePath);
-                    rename($tempPath, $inputFilePath);
-                    return $fileName;
-                } else {
-                    // Если сжатие не дало значительного выигрыша, оставляем исходный файл
-                    unlink($tempPath);
-                    return $fileName;
-                }
-            } else {
-                Log::warning('Экстремальное сжатие не удалось:', [
-                    'returnVar' => $returnVar,
+            // Создаем директорию, если её нет
+            $outputDir = dirname(Storage::disk('public')->path($thumbnailPath));
+            if (!file_exists($outputDir)) {
+                mkdir($outputDir, 0755, true);
+            }
+            
+            $outputPath = Storage::disk('public')->path($thumbnailPath);
+            
+            // Формируем команду для создания миниатюры в WebP формате
+            $ffmpegCmd = escapeshellcmd($ffmpegPath);
+            $inputPathEscaped = escapeshellarg($inputPath);
+            $outputPathEscaped = escapeshellarg($outputPath);
+            
+            $command = "{$ffmpegCmd} -y -i {$inputPathEscaped} -ss {$timeOffset} -vframes 1 " .
+                      "-vf \"scale=640:-2\" -c:v libwebp -lossless 0 -compression_level 6 -q:v 75 {$outputPathEscaped} 2>&1";
+            
+            $output = [];
+            $returnVar = 0;
+            exec($command, $output, $returnVar);
+            
+            // Если не удалось создать WebP, пробуем JPEG
+            if ($returnVar !== 0 || !file_exists($outputPath)) {
+                Log::warning('Не удалось создать WebP миниатюру, пробуем JPEG', [
                     'output' => implode("\n", $output)
                 ]);
                 
-                // Если экстремальное сжатие не удалось, возвращаем исходный файл
-                if (file_exists($tempPath)) {
-                    unlink($tempPath);
+                $thumbnailPath = $thumbnailDir . '/' . Str::random(8) . '_thumb.jpg';
+                $outputPath = Storage::disk('public')->path($thumbnailPath);
+                
+                $command = "{$ffmpegCmd} -y -i {$inputPathEscaped} -ss {$timeOffset} -vframes 1 " .
+                          "-vf \"scale=640:-2\" -q:v 2 {$outputPathEscaped} 2>&1";
+                
+                $output = [];
+                $returnVar = 0;
+                exec($command, $output, $returnVar);
+                
+                if ($returnVar !== 0 || !file_exists($outputPath)) {
+                    throw new Exception('Ошибка при создании миниатюры: ' . implode("\n", $output));
                 }
-                return $fileName;
             }
-        } catch (\Exception $e) {
-            Log::error('Ошибка при экстремальном сжатии видео: ' . $e->getMessage());
-            return $fileName;
-        }
-    }
-
-    /**
-     * Определяет уровень сжатия для видео на основе его размера
-     *
-     * @param float $fileSizeMB Размер файла в мегабайтах
-     * @param string $requestedQuality Запрошенное качество (small, medium, large)
-     * @return string Уровень сжатия (ultra_compressed, small, medium, large)
-     */
-    private function getCompressionLevelForVideo($fileSizeMB, $requestedQuality)
-    {
-        // Если файл очень большой (>30MB), используем максимальное сжатие
-        if ($fileSizeMB > 30) {
-            return 'ultra_compressed';
-        }
-        
-        // Если файл большой (>15MB), используем низкое качество
-        if ($fileSizeMB > 15) {
-            return 'small';
-        }
-        
-        // Для файлов от 5 до 15MB используем качество на основе запроса
-        if ($fileSizeMB > 5) {
-            // Для large используем medium, для остальных - запрошенное
-            if ($requestedQuality === 'large') {
-                return 'medium';
-            }
-            return $requestedQuality;
-        }
-        
-        // Для небольших файлов (<5MB) используем запрошенное качество
-        return $requestedQuality;
-    }
-
-    /**
-     * Получает параметры обрезки видео
-     *
-     * @param float|null $startTime Время начала
-     * @param float|null $endTime Время конца
-     * @param float $duration Длительность видео
-     * @return string Параметры для FFmpeg
-     */
-    private function getTrimParameters($startTime, $endTime, $duration)
-    {
-        $trimParams = '';
-        
-        // Если указано начальное время
-        if (is_numeric($startTime) && $startTime > 0) {
-            $trimParams .= " -ss " . floatval($startTime);
-        }
-        
-        // Если указано конечное время
-        if (is_numeric($endTime) && $endTime > 0 && $endTime > $startTime) {
-            if (is_numeric($startTime) && $startTime > 0) {
-                // Если указано время начала, то -t указывает длительность
-                $videoDuration = $endTime - $startTime;
-                $trimParams .= " -t " . floatval($videoDuration);
-            } else {
-                // Если время начала не указано, то -to указывает время конца
-                $trimParams .= " -to " . floatval($endTime);
-            }
-        }
-        
-        // Ограничиваем максимальную длительность видео до 15 секунд
-        $maxDuration = 15.0;
-        if (empty($trimParams) && $duration > $maxDuration) {
-            $trimParams .= " -t " . $maxDuration;
-            Log::info('Видео обрезано до максимальной длительности', [
-                'max_duration' => $maxDuration,
-                'original_duration' => $duration
+            
+            return $thumbnailPath;
+        } catch (Exception $e) {
+            Log::error('Ошибка при создании миниатюры', [
+                'error' => $e->getMessage(),
+                'video' => $videoPath,
+                'trace' => $e->getTraceAsString()
             ]);
-        }
-        
-        return $trimParams;
-    }
-
-    /**
-     * Получает детальную информацию о видеофайле
-     *
-     * @param string $videoPath Путь к видеофайлу
-     * @return array Информация о видео
-     */
-    private function getVideoInfoDetailed($videoPath)
-    {
-        $info = [
-            'duration' => 0,
-            'width' => 0,
-            'height' => 0,
-            'bitrate' => 0,
-            'codec' => '',
-            'fps' => 0
-        ];
-        
-        try {
-            $escapedPath = escapeshellarg($videoPath);
             
-            // Детальная информация о файле
-            $ffprobeCmd = "ffprobe -v quiet -print_format json -show_format -show_streams {$escapedPath}";
-            $jsonOutput = shell_exec($ffprobeCmd);
-            
-            if ($jsonOutput) {
-                $data = json_decode($jsonOutput, true);
-                
-                if (isset($data['format']['duration'])) {
-                    $info['duration'] = (float)$data['format']['duration'];
-                }
-                
-                if (isset($data['format']['bit_rate'])) {
-                    $info['bitrate'] = (int)$data['format']['bit_rate'];
-                }
-                
-                // Ищем видеопоток
-                if (isset($data['streams']) && is_array($data['streams'])) {
-                    foreach ($data['streams'] as $stream) {
-                        if (isset($stream['codec_type']) && $stream['codec_type'] === 'video') {
-                            $info['width'] = (int)($stream['width'] ?? 0);
-                            $info['height'] = (int)($stream['height'] ?? 0);
-                            $info['codec'] = $stream['codec_name'] ?? '';
-                            
-                            // Извлекаем FPS
-                            if (isset($stream['r_frame_rate'])) {
-                                $fpsStr = $stream['r_frame_rate'];
-                                if (preg_match('/(\d+)\/(\d+)/', $fpsStr, $matches)) {
-                                    $num = (int)$matches[1];
-                                    $den = (int)$matches[2];
-                                    if ($den > 0) {
-                                        $info['fps'] = $num / $den;
-                                    }
-                                }
-                            }
-                            
-                            break;
-                        }
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error('Ошибка при получении информации о видео: ' . $e->getMessage());
+            return null;
         }
-        
-        return $info;
     }
     
     /**
-     * Получает информацию о видео с использованием FFprobe
-     *
+     * Получить длительность видео в секундах
+     * 
      * @param string $videoPath Путь к видео
-     * @return array Информация о видео (длительность, разрешение и т.д.)
+     * @return float|null Длительность видео в секундах или null в случае ошибки
      */
-    protected function getVideoInfo($videoPath)
+    public function getVideoDuration($videoPath)
     {
-        $info = [
-            'duration' => 0,
-            'width' => 0,
-            'height' => 0,
-            'bitrate' => 0
-        ];
-        
-        if (!$this->checkFFmpegInstalled()) {
-            return $info;
-        }
-        
         try {
-            $escapedPath = escapeshellarg($videoPath);
-            
-            // Получаем длительность
-            $durationCmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {$escapedPath}";
-            $output = [];
-            exec($durationCmd, $output, $returnVar);
-            
-            if ($returnVar === 0 && !empty($output[0])) {
-                $info['duration'] = (float)$output[0];
+            // Проверяем, существует ли файл
+            if (!Storage::disk('public')->exists($videoPath)) {
+                throw new Exception('Файл видео не найден: ' . $videoPath);
             }
             
-            // Получаем разрешение
-            $resolutionCmd = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1:nokey=0 {$escapedPath}";
-            $output = [];
-            exec($resolutionCmd, $output, $returnVar);
+            // Получаем путь к FFprobe
+            $ffprobePath = $this->getFFprobePath();
             
-            if ($returnVar === 0) {
-                foreach ($output as $line) {
-                    if (preg_match('/width=(\d+)/', $line, $matches)) {
-                        $info['width'] = (int)$matches[1];
-                    } elseif (preg_match('/height=(\d+)/', $line, $matches)) {
-                        $info['height'] = (int)$matches[1];
-                    }
-                }
+            // Проверяем наличие FFprobe
+            if (!$ffprobePath) {
+                throw new Exception('FFprobe не установлен в системе');
             }
-            
-            // Получаем битрейт
-            $bitrateCmd = "ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 {$escapedPath}";
-            $output = [];
-            exec($bitrateCmd, $output, $returnVar);
-            
-            if ($returnVar === 0 && !empty($output[0])) {
-                $info['bitrate'] = (int)$output[0];
-            }
-            
-        } catch (\Exception $e) {
-            Log::error('Ошибка при получении информации о видео: ' . $e->getMessage());
-        }
-        
-        return $info;
-    }
 
-    /**
-     * Проверка наличия FFmpeg
-     *
-     * @return bool
-     */
-    protected function checkFFmpegInstalled()
-    {
-        $output = null;
-        $returnVar = null;
-        
-        @exec('ffmpeg -version', $output, $returnVar);
-        
-        return $returnVar === 0;
+            $inputPath = Storage::disk('public')->path($videoPath);
+            
+            // Формируем команду для получения длительности
+            $ffprobeCmd = escapeshellcmd($ffprobePath);
+            $inputPathEscaped = escapeshellarg($inputPath);
+            
+            $command = "{$ffprobeCmd} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {$inputPathEscaped} 2>&1";
+            
+            $output = [];
+            $returnVar = 0;
+            exec($command, $output, $returnVar);
+            
+            if ($returnVar !== 0 || empty($output)) {
+                throw new Exception('Ошибка при получении длительности видео');
+            }
+            
+            return floatval($output[0]);
+        } catch (Exception $e) {
+            Log::error('Ошибка при получении длительности видео', [
+                'error' => $e->getMessage(),
+                'video' => $videoPath,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return null;
+        }
     }
 }

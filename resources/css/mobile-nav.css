@@ -6,6 +6,282 @@
 */
 
 .mb-navigation {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0);
+    will-change: transform, opacity;
+}
+
+/* Добавим класс для скрытой по умолчанию панели - чтобы анимировать появление */
+.mb-navigation.mb-initial-hidden {
+    transform: translateY(120%);
+    opacity: 0;
+}
+
+/* Анимация скрытия навигации при скролле вниз */
+.mb-navigation.mb-nav-hidden {
+    transform: translateY(120%); /* Увеличиваем до 120% для надежного скрытия */
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Анимация появления при загрузке страницы */
+.mb-nav-loaded {
+    animation: navAppear 0.4s forwards;
+}
+
+@keyframes navAppear {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Принудительное отображение для страниц редактора */
+.mb-navigation.mb-nav-force-visible {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    animation: none !important;
+}
+
+/* Стили для контейнера иконок */
+.mb-fixed-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.mb-scroller {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE и Edge */
+  display: flex;
+  justify-content: center;
+}
+
+.mb-scroller::-webkit-scrollbar {
+  display: none; /* Chrome и Safari */
+}
+
+/* Стили для иконок */
+.mb-icons-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 16px;
+}
+
+.mb-icon-wrapper {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 8px;
+  position: relative;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.mb-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #333;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.mb-nav-icon-wrap {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.mb-nav-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+/* Активная иконка */
+.mb-active .mb-nav-icon {
+  transform: scale(1.1);
+}
+
+.mb-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 2px;
+  background-color: #007bff;
+  border-radius: 1px;
+}
+
+/* Стили для состояния взаимодействия */
+.mb-touch-active {
+  transform: scale(0.9);
+  opacity: 0.75;
+}
+
+.mb-long-press {
+  animation: pulse 0.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(0.9); opacity: 0.8; }
+  to { transform: scale(1.1); opacity: 1; }
+}
+
+/* Стили для кнопки "назад" */
+.mb-icon-wrapper.back-button-active .mb-nav-icon {
+  filter: invert(41%) sepia(98%) saturate(1747%) hue-rotate(187deg) brightness(96%) contrast(96%);
+}
+
+/* Стили для всплывающего меню */
+.mb-popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mb-popup-container {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  padding: 16px;
+  width: 90%;
+  max-width: 360px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Индикатор свайпа для закрытия */
+.mb-swipe-indicator {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+}
+
+/* Сетка для элементов всплывающего меню */
+.mb-popup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* Оптимизация для устройств со сниженной производительностью */
+@media (prefers-reduced-motion: reduce) {
+  .mb-navigation,
+  .mb-nav-icon,
+  .mb-popup-backdrop,
+  .mb-popup-container,
+  .mb-icon-wrapper,
+  .mb-touch-active {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Специфичные стили для iOS */
+@supports (-webkit-touch-callout: none) {
+  .mb-navigation {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* Устраняем баг с прозрачностью на iOS */
+  .mb-navigation {
+    background-color: rgba(255, 255, 255, 0.98);
+  }
+}
+
+/* Фиксированные стили для модальных окон */
+body.modal-scroll-blocked {
+  overflow: hidden !important;
+}
+
+/* Стили для страницы редактора */
+html.editor-page .mb-navigation {
+  display: flex !important;
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+}
+
+/* Улучшенные стили для кнопок в навигации */
+.mb-navigation .btn {
+  padding: 8px 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+}
+
+/* Стили для основной кнопки сохранения */
+#save-template-btn {
+  background-color: #007bff;
+  border-color: #007bff;
+  padding: 8px 16px;
+  margin: 0 8px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+#save-template-btn:active {
+  transform: scale(0.95);
+}
+
+/*
+* Prefixed by https://autoprefixer.github.io
+* PostCSS: v8.4.14,
+* Autoprefixer: v10.4.7
+* Browsers: last 4 version
+*/
+
+.mb-navigation {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -300,11 +576,11 @@
   z-index: 999;
   opacity: 0;
   visibility: hidden;
-  -webkit-transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+  -webkit-transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
               visibility 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  -o-transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+  -o-transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
               visibility 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
               visibility 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -531,28 +807,28 @@
 }
 
 @-webkit-keyframes currentPagePulse {
-  0%, 100% { 
-    opacity: 0.7; 
-    -webkit-transform: translateX(-50%) scale(1); 
-            transform: translateX(-50%) scale(1); 
+  0%, 100% {
+    opacity: 0.7;
+    -webkit-transform: translateX(-50%) scale(1);
+            transform: translateX(-50%) scale(1);
   }
-  50% { 
-    opacity: 1; 
-    -webkit-transform: translateX(-50%) scale(1.2); 
-            transform: translateX(-50%) scale(1.2); 
+  50% {
+    opacity: 1;
+    -webkit-transform: translateX(-50%) scale(1.2);
+            transform: translateX(-50%) scale(1.2);
   }
 }
 
 @keyframes currentPagePulse {
-  0%, 100% { 
-    opacity: 0.7; 
-    -webkit-transform: translateX(-50%) scale(1); 
-            transform: translateX(-50%) scale(1); 
+  0%, 100% {
+    opacity: 0.7;
+    -webkit-transform: translateX(-50%) scale(1);
+            transform: translateX(-50%) scale(1);
   }
-  50% { 
-    opacity: 1; 
-    -webkit-transform: translateX(-50%) scale(1.2); 
-            transform: translateX(-50%) scale(1.2); 
+  50% {
+    opacity: 1;
+    -webkit-transform: translateX(-50%) scale(1.2);
+            transform: translateX(-50%) scale(1.2);
   }
 }
 
@@ -704,7 +980,7 @@
     max-width: 500px;
 }
 
-.modal-fullscreen .modal-panel-dialog {
+.modal-fullscreen  {
     max-width: 100%;
     height: 100%;
     max-height: 100vh;

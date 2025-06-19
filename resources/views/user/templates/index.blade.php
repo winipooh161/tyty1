@@ -69,10 +69,7 @@
             @if($templates->count() > 0)
                 @include('user.templates.partials.template-list', ['templates' => $templates])
             @else
-                <div class="alert alert-warning">
-                    <h4><i class="bi bi-exclamation-triangle me-2"></i> У вас пока нет шаблонов</h4>
-                    <p>Перейдите в <a href="{{ route('templates.categories') }}">категории шаблонов</a> чтобы создать свой первый шаблон.</p>
-                </div>
+              
             @endif
         </div>
         

@@ -4,211 +4,240 @@ export class MobileNavEvents {
         this.scroll = scroll;
         this.popup = popup;
         
-        // Состояние
-        this.touchStartX = 0;
-        this.touchStartY = 0;
-        this.isTouchMoved = false;
-        this.isLongPress = false;
-        this.longPressTimer = null;
-        this.longPressDelay = 500; // ms для срабатывания долгого нажатия
-        this.activeIconId = null; // Текущая активная иконка для модального окна
+        // Состояние взаимодействия
+        this.state = {
+            touchStartX: 0,
+            touchStartY: 0,
+            isTouchMoved: false,
+            isLongPress: false,
+            activeIconId: null,
+            lastInteractionTime: 0
+        };
         
-        // Инициализация после создания объекта
+        // Таймеры
+        this.timers = {
+            longPress: null,
+            debounce: null
+        };
+        
+        // Константы
+        this.constants = {
+            longPressDelay: 500, // мс для срабатывания долгого нажатия
+            debounceDelay: 300,  // мс для предотвращения дребезга событий
+            minSwipeDistance: 30 // минимальное расстояние для свайпа
+        };
+        
+        // Кэш для обработчиков событий
+        this._eventHandlers = new Map();
+        
+        // Инициализация
         this.init();
     }
     
     init() {
+        // Безопасная инициализация с проверкой готовности DOM
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.setupEventListeners();
             });
         } else {
             // DOM уже загружен
-            setTimeout(() => this.setupEventListeners(), 500);
+            setTimeout(() => this.setupEventListeners(), 100);
         }
     }
     
     setupEventListeners() {
-        if (!this.core.isInitialized || !this.core.container) {
-            console.warn('MobileNavEvents: Ядро навигации не инициализировано');
+        // Проверяем инициализацию ядра навигации
+        if (!this.core || !this.core.container) {
+            console.warn('MobileNavEvents: Необходимо инициализировать ядро навигации');
+            // Пробуем повторно через 500мс
+            setTimeout(() => this.setupEventListeners(), 500);
             return;
         }
-
-        // Слушаем события открытия/закрытия модальных окон
+        
+        // Настройка обработчиков модальных окон
         this.setupModalListeners();
         
         // События касания на навигации
         this.setupTouchEvents();
         
-        // События клика на иконках
+        // События клика на иконках с делегированием событий
         this.setupClickEvents();
         
-        console.log('MobileNavEvents: События инициализированы');
+        console.log('MobileNavEvents: События успешно инициализированы');
     }
     
+    // Оптимизированная настройка обработчиков модальных окон
     setupModalListeners() {
-        // Прослушиваем события открытия модальных окон
-        document.addEventListener('modal.opened', (event) => {
-            const modalId = event.detail?.modalId;
+        // Используем один обработчик для всех модальных событий
+        const handleModalEvent = (event) => {
+            const eventType = event.type;
+            const detail = event.detail || {};
+            const modalId = detail.modalId;
+            const sourceIconId = detail.sourceIconId;
             
-            // Получаем sourceIconId из модального события или из modalTriggers
-            let sourceIconId = event.detail?.sourceIconId;
-            
-            // Если sourceIconId не определен, пробуем получить его из modalTriggers
-            if (!sourceIconId && modalId && this.popup.modalTriggers.has(modalId)) {
-                sourceIconId = this.popup.modalTriggers.get(modalId).iconId;
+            if (eventType === 'modal.opened') {
+                console.log('⚡️ Модальное окно открыто:', { modalId, sourceIconId });
+                
+                // Обработка открытия модального окна
+                if (modalId && sourceIconId) {
+                    // Обновление активной иконки с проверкой предыдущего состояния
+                    if (this.state.activeIconId === sourceIconId) {
+                        this.core.restoreIcon(sourceIconId);
+                    }
+                    
+                    // Устанавливаем новую активную иконку
+                    this.state.activeIconId = sourceIconId;
+                    
+                    // Конвертируем иконку в кнопку "назад"
+                    this.core.convertIconToBackButton(sourceIconId);
+                }
+            } else if (eventType === 'modal.closed') {
+                console.log('⚡️ Модальное окно закрыто:', { modalId, activeIconId: this.state.activeIconId });
+                
+                // Обработка закрытия модального окна
+                if (modalId && this.state.activeIconId) {
+                    // Восстанавливаем иконку и сбрасываем состояние
+                    this.core.restoreIcon(this.state.activeIconId);
+                    this.state.activeIconId = null;
+                }
             }
+        };
+        
+        // Регистрируем единый обработчик для событий открытия и закрытия
+        document.addEventListener('modal.opened', handleModalEvent);
+        document.addEventListener('modal.closed', handleModalEvent);
+        
+        // Интеграция с существующей модальной системой
+        this.injectModalSystemHandlers();
+    }
+    
+    // Внедрение оптимизированных обработчиков в модальную систему
+    injectModalSystemHandlers() {
+        if (!window.modalPanel || window.modalPanel._methodsModified) return;
+        
+        try {
+            // Сохраняем оригинальные методы
+            const originalOpenModal = window.modalPanel.openModal;
+            const originalCloseModal = window.modalPanel.closeModal;
             
-            console.log('⚡️ Событие modal.opened получено:', { modalId, sourceIconId });
-            
-            // Проверяем, есть ли ID иконки и модального окна
-            if (modalId && sourceIconId) {
-                // Если иконка уже активна, сначала восстанавливаем её,
-                // чтобы обеспечить корректное обновление обработчиков
-                if (this.activeIconId === sourceIconId) {
-                    console.log(`🔄 Обновляем обработчики для иконки ${sourceIconId}`);
-                    // Восстанавливаем иконку перед повторным преобразованием
-                    this.core.restoreIcon(sourceIconId);
-                } else {
-                    console.log(`🔄 Преобразуем иконку ${sourceIconId} в кнопку "назад" для модалки ${modalId}`);
+            // Переопределяем метод открытия с дополнительной логикой
+            window.modalPanel.openModal = (modalId) => {
+                // Проверяем дебаунсинг
+                const now = Date.now();
+                if (now - this.state.lastInteractionTime < this.constants.debounceDelay) return false;
+                this.state.lastInteractionTime = now;
+                
+                // Вызываем оригинальный метод
+                const result = originalOpenModal.call(window.modalPanel, modalId);
+                
+                // Если успешно открыто, генерируем событие
+                if (result) {
+                    let sourceInfo = this.getModalSourceInfo(modalId);
+                    
+                    if (sourceInfo) {
+                        // Создаем событие открытия модального окна
+                        this.triggerModalEvent('modal.opened', {
+                            modalId,
+                            sourceIconId: sourceInfo.iconId
+                        });
+                    }
                 }
                 
-                this.activeIconId = sourceIconId;
-                
-                // Всегда преобразуем иконку в кнопку "назад" для обновления обработчиков
-                const success = this.core.convertIconToBackButton(sourceIconId);
-                console.log(`Результат преобразования: ${success ? 'успешно' : 'ошибка'}`);
-            }
-        });
-        
-        // Прослушиваем события закрытия модальных окон
-        document.addEventListener('modal.closed', (event) => {
-            const modalId = event.detail?.modalId;
+                return result;
+            };
             
-            console.log('⚡️ Событие modal.closed получено:', { modalId, activeIconId: this.activeIconId });
+            // Переопределяем метод закрытия
+            window.modalPanel.closeModal = (immediate = false) => {
+                // Получаем ID активного модального окна
+                const modalId = window.modalPanel.activeModal?.id;
+                
+                // Вызываем оригинальный метод
+                const result = originalCloseModal.call(window.modalPanel, immediate);
+                
+                // Если было активное модальное окно, генерируем событие
+                if (modalId) {
+                    this.triggerModalEvent('modal.closed', { modalId });
+                }
+                
+                return result;
+            };
             
-            // Если закрыто модальное окно и у нас есть активная иконка
-            if (modalId && this.activeIconId) {
-                console.log(`🔄 Восстанавливаем оригинальную иконку ${this.activeIconId}`);
-                
-                // Восстанавливаем исходную иконку
-                const success = this.core.restoreIcon(this.activeIconId);
-                console.log(`Результат восстановления: ${success ? 'успешно' : 'ошибка'}`);
-                this.activeIconId = null;
-            }
-        });
-        
-        // Связываем с модальной системой, если она существует
-        if (window.modalPanel) {
-            // Проверяем, не модифицированы ли методы уже
-            if (!window.modalPanel._methodsModified) {
-                const originalOpenModal = window.modalPanel.openModal;
-                const originalCloseModal = window.modalPanel.closeModal;
-                
-                // Модифицируем метод открытия модального окна
-                window.modalPanel.openModal = (modalId) => {
-                    const result = originalOpenModal.call(window.modalPanel, modalId);
-                    
-                    if (result) {
-                        // Если есть информация о триггере модального окна
-                        let triggerInfo = null;
-                        
-                        // Проверяем наличие информации в modalSources модальной системы
-                        if (window.modalPanel.modalSources && window.modalPanel.modalSources.has(modalId)) {
-                            triggerInfo = window.modalPanel.modalSources.get(modalId);
-                        } 
-                        // Если нет, проверяем в popup.modalTriggers
-                        else if (this.popup && this.popup.modalTriggers.has(modalId)) {
-                            triggerInfo = this.popup.modalTriggers.get(modalId);
-                        }
-                        
-                        if (triggerInfo && triggerInfo.iconId) {
-                            // Создаем и отправляем событие открытия модального окна
-                            const event = new CustomEvent('modal.opened', {
-                                detail: {
-                                    modalId: modalId,
-                                    sourceIconId: triggerInfo.iconId
-                                }
-                            });
-                            document.dispatchEvent(event);
-                        }
-                    }
-                    
-                    return result;
-                };
-                
-                // Модифицируем метод закрытия модального окна
-                window.modalPanel.closeModal = (immediate = false) => {
-                    // Получаем ID активного модального окна перед закрытием
-                    const modalId = window.modalPanel.activeModal?.id;
-                    
-                    // Вызываем оригинальный метод
-                    originalCloseModal.call(window.modalPanel, immediate);
-                    
-                    if (modalId) {
-                        // Создаем и отправляем событие закрытия модального окна
-                        const event = new CustomEvent('modal.closed', {
-                            detail: {
-                                modalId: modalId
-                            }
-                        });
-                        document.dispatchEvent(event);
-                    }
-                };
-                
-                // Отмечаем, что методы уже модифицированы
-                window.modalPanel._methodsModified = true;
-            }
+            // Отмечаем, что методы были модифицированы
+            window.modalPanel._methodsModified = true;
+            console.log('MobileNavEvents: Методы модальной системы успешно модифицированы');
+        } catch (error) {
+            console.error('MobileNavEvents: Ошибка при модификации методов модальной системы:', error);
         }
     }
     
+    // Получение информации об источнике модального окна
+    getModalSourceInfo(modalId) {
+        // Проверяем в modalSources модальной системы
+        if (window.modalPanel?.modalSources?.has(modalId)) {
+            return window.modalPanel.modalSources.get(modalId);
+        }
+        
+        // Проверяем в нашей системе popup
+        if (this.popup?.modalTriggers?.has(modalId)) {
+            return this.popup.modalTriggers.get(modalId);
+        }
+        
+        return null;
+    }
+    
+    // Генерация события модального окна
+    triggerModalEvent(eventName, detail = {}) {
+        const event = new CustomEvent(eventName, { detail });
+        document.dispatchEvent(event);
+    }
+    
+    // Настройка обработчиков сенсорных событий
     setupTouchEvents() {
-        // Обработка начала касания
-        this.core.container.addEventListener('touchstart', (e) => {
-            // Сохраняем начальные координаты касания
-            this.touchStartX = e.touches[0].clientX;
-            this.touchStartY = e.touches[0].clientY;
-            this.isTouchMoved = false;
+        // Используем делегирование событий для повышения производительности
+        this._addEventHandler(this.core.container, 'touchstart', (e) => {
+            // Определяем начальные координаты
+            const touch = e.touches[0];
+            this.state.touchStartX = touch.clientX;
+            this.state.touchStartY = touch.clientY;
+            this.state.isTouchMoved = false;
+            this.state.isLongPress = false;
             
-            // Определяем элемент под пальцем
-            const touchedElement = document.elementFromPoint(this.touchStartX, this.touchStartY);
+            // Находим иконку под касанием для более точного определения
+            const touchedElement = document.elementFromPoint(this.state.touchStartX, this.state.touchStartY);
             const iconWrapper = touchedElement ? touchedElement.closest('.mb-icon-wrapper') : null;
             
             if (iconWrapper) {
                 // Добавляем визуальный эффект при касании
                 iconWrapper.classList.add('mb-touch-active');
                 
-                // Очищаем существующий таймер долгого нажатия, если есть
-                if (this.longPressTimer) {
-                    clearTimeout(this.longPressTimer);
-                }
+                // Запускаем таймер для долгого нажатия с очисткой предыдущего
+                clearTimeout(this.timers.longPress);
                 
-                // Устанавливаем таймер для долгого нажатия
-                this.longPressTimer = setTimeout(() => {
-                    if (!this.isTouchMoved) {
-                        this.isLongPress = true;
+                this.timers.longPress = setTimeout(() => {
+                    // Срабатывает только если палец не двигался
+                    if (!this.state.isTouchMoved) {
+                        this.state.isLongPress = true;
                         this.handleLongPress(iconWrapper);
                     }
-                }, this.longPressDelay);
+                }, this.constants.longPressDelay);
             }
         }, { passive: true });
         
-        // Обработка перемещения пальца
-        this.core.container.addEventListener('touchmove', (e) => {
-            if (this.longPressTimer) {
-                // Определяем, было ли значимое движение пальца
-                const touchX = e.touches[0].clientX;
-                const touchY = e.touches[0].clientY;
-                const deltaX = Math.abs(touchX - this.touchStartX);
-                const deltaY = Math.abs(touchY - this.touchStartY);
+        // Отслеживание движения пальца
+        this._addEventHandler(this.core.container, 'touchmove', (e) => {
+            // Отменяем долгое нажатие при движении пальца
+            if (this.state.touchStartX && this.state.touchStartY) {
+                const touch = e.touches[0];
+                const deltaX = Math.abs(touch.clientX - this.state.touchStartX);
+                const deltaY = Math.abs(touch.clientY - this.state.touchStartY);
                 
-                // Если палец переместился на значимое расстояние, отменяем долгое нажатие
+                // Если движение превысило порог, отменяем долгое нажатие
                 if (deltaX > 10 || deltaY > 10) {
-                    this.isTouchMoved = true;
-                    clearTimeout(this.longPressTimer);
-                    this.longPressTimer = null;
+                    this.state.isTouchMoved = true;
+                    clearTimeout(this.timers.longPress);
                     
-                    // Удаляем эффект активного нажатия
+                    // Снимаем эффект активного нажатия
                     document.querySelectorAll('.mb-touch-active').forEach(el => {
                         el.classList.remove('mb-touch-active');
                     });
@@ -217,81 +246,135 @@ export class MobileNavEvents {
         }, { passive: true });
         
         // Обработка завершения касания
-        this.core.container.addEventListener('touchend', (e) => {
-            // Удаляем эффект активного нажатия
+        this._addEventHandler(this.core.container, 'touchend', () => {
+            // Очищаем таймер долгого нажатия
+            clearTimeout(this.timers.longPress);
+            
+            // Удаляем визуальный эффект активного нажатия
             document.querySelectorAll('.mb-touch-active').forEach(el => {
                 el.classList.remove('mb-touch-active');
             });
-            
-            // Очищаем таймер долгого нажатия
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
-            }
-            
-            // Сбрасываем состояние долгого нажатия
-            this.isLongPress = false;
         }, { passive: true });
     }
     
+    // Настройка обработчиков кликов с делегированием
     setupClickEvents() {
-        // Находим все иконки с атрибутом data-modal
-        const modalTriggers = document.querySelectorAll('.mb-icon-wrapper[data-modal="true"]');
-        
-        modalTriggers.forEach(trigger => {
-            const modalId = trigger.getAttribute('data-modal-target');
-            const iconId = trigger.getAttribute('data-icon-id');
+        // Используем делегирование событий для экономии ресурсов
+        document.addEventListener('click', (e) => {
+            // Проверяем дебаунсинг
+            const now = Date.now();
+            if (now - this.state.lastInteractionTime < this.constants.debounceDelay) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            this.state.lastInteractionTime = now;
             
-            if (modalId && iconId) {
-                // Добавляем информацию о триггере модального окна в popup
-                this.popup.modalTriggers.set(modalId, {
-                    element: trigger,
-                    iconId: iconId
-                });
+            // Обработка клика на элементы модальных окон
+            const modalTrigger = e.target.closest('[data-icon-id][data-modal="true"]');
+            if (modalTrigger) {
+                // Предотвращаем стандартное поведение
+                e.preventDefault();
+                e.stopPropagation();
                 
-                // Специальная обработка для QR-сканера
-                if (iconId === 'qr-scanner') {
-                    trigger.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        console.log('QR Scanner клик обработан в MobileNavEvents');
-                        
-                        // Открываем модальное окно через глобальную функцию
-                        if (window.openQrScannerModal) {
-                            window.openQrScannerModal(trigger);
-                        } else if (window.modalPanel) {
-                            window.modalPanel.openModal(modalId);
-                        }
+                const modalId = modalTrigger.getAttribute('data-modal-target');
+                const iconId = modalTrigger.getAttribute('data-icon-id');
+                
+                if (modalId && iconId) {
+                    // Сохраняем связь модального окна с иконкой для будущих использований
+                    this.popup.modalTriggers.set(modalId, {
+                        element: modalTrigger,
+                        iconId: iconId
                     });
+                    
+                    // Открываем модальное окно через соответствующий контроллер
+                    if (iconId === 'qr-scanner' && window.qrScannerController) {
+                        window.qrScannerController.open(e);
+                    } else if (window.modalPanel) {
+                        window.modalPanel.openModal(modalId);
+                    }
                 }
             }
         });
     }
     
+    // Обработка долгого нажатия на иконку
     handleLongPress(iconWrapper) {
         // Получаем ID иконки
         const iconId = iconWrapper.getAttribute('data-icon-id');
         if (!iconId) return;
         
-        // Добавляем класс для эффекта долгого нажатия
+        // Добавляем класс для визуального эффекта
         iconWrapper.classList.add('mb-long-press');
         
-        // Вибрация для тактильной обратной связи
-        if (navigator.vibrate) {
+        // Тактильная обратная связь
+        this.provideTactileFeedback(50);
+        
+        // Показываем всплывающее меню с небольшой задержкой для лучшего UX
+        setTimeout(() => {
+            if (this.popup && typeof this.popup.showPopup === 'function') {
+                this.popup.showPopup(iconId);
+            }
+            
+            // Удаляем эффект долгого нажатия
+            iconWrapper.classList.remove('mb-long-press', 'mb-touch-active');
+        }, 150);
+    }
+    
+    // Предоставляет тактильную обратную связь
+    provideTactileFeedback(duration = 30) {
+        // Проверка наличия явного взаимодействия пользователя
+        const hasInteracted = 
+            this.popup?.userHasInteracted === true || 
+            window.userHasInteractedWithPage === true;
+        
+        if (hasInteracted && navigator.vibrate && 
+            !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             try {
-                navigator.vibrate(50);
+                // Используем более короткую вибрацию для снижения раздражения
+                navigator.vibrate(Math.min(duration, 20));
             } catch (e) {
                 // Игнорируем ошибки vibrate API
             }
         }
+    }
+    
+    // Безопасное добавление обработчика событий с сохранением ссылки
+    _addEventHandler(element, eventType, handler, options = {}) {
+        if (!element) return;
         
-        // Показываем всплывающее меню
-        setTimeout(() => {
-            this.popup.showPopup(iconId);
-            
-            // Удаляем эффект долгого нажатия
-            iconWrapper.classList.remove('mb-long-press');
-        }, 300);
+        // Сохраняем обработчик для возможности удаления
+        if (!this._eventHandlers.has(element)) {
+            this._eventHandlers.set(element, new Map());
+        }
+        
+        const elementHandlers = this._eventHandlers.get(element);
+        if (!elementHandlers.has(eventType)) {
+            elementHandlers.set(eventType, []);
+        }
+        
+        elementHandlers.get(eventType).push(handler);
+        
+        // Добавляем событие
+        element.addEventListener(eventType, handler, options);
+    }
+    
+    // Удаление всех обработчиков для очистки ресурсов
+    destroy() {
+        // Очищаем все таймеры
+        Object.values(this.timers).forEach(timer => {
+            if (timer) clearTimeout(timer);
+        });
+        
+        // Удаляем все обработчики событий
+        this._eventHandlers.forEach((typeHandlers, element) => {
+            typeHandlers.forEach((handlers, eventType) => {
+                handlers.forEach(handler => {
+                    element.removeEventListener(eventType, handler);
+                });
+            });
+        });
+        
+        this._eventHandlers.clear();
     }
 }

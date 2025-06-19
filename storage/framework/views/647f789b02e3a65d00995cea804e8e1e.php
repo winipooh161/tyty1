@@ -23,7 +23,7 @@
     position: relative;
     width: 100%;
     max-width: 500px;
-    margin: 1.75rem auto;
+
     pointer-events: none;
 }
 
@@ -158,15 +158,15 @@
 /* Адаптивные стили для мобильных устройств */
 @media (max-width: 576px) {
     .modal-panel-dialog {
-        margin: 0.5rem;
+     
     }
     
     .modal-panel-body {
-        padding: 1rem;
+        
     }
     
     .modal-panel-header, .modal-panel-footer {
-        padding: 0.75rem;
+       
     }
 }
 </style>

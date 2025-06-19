@@ -8,7 +8,7 @@
                 <?php if(request()->is('templates/create-new/*') || request()->is('client/templates/create-new/*') || request()->is('templates/editor*') || request()->is('client/templates/editor*')): ?>
                     <!-- Иконки для страницы создания шаблонов -->
                     <div class="mb-icon-wrapper" data-icon-id="back">
-                        <a href="<?php echo e(route('templates.categories')); ?>" class="mb-nav-link">
+                        <a href="<?php echo e(route('home')); ?>" class="mb-nav-link">
                             <div class="mb-nav-icon-wrap">
                                 <img src="<?php echo e(asset('images/icons/arrow-left.svg')); ?>" class="mb-nav-icon" alt="Назад" draggable="false">
                             </div>
@@ -99,15 +99,77 @@
 <script>
 // Дополнительная инициализация для мобильной навигации
 document.addEventListener('DOMContentLoaded', function() {
-    // Принудительно показываем мобильную навигацию
+    // Инициализация навигации
     const mbNavigation = document.querySelector('.mb-navigation');
     if (mbNavigation) {
-        // Применяем стили напрямую
-        mbNavigation.classList.add('mb-nav-loaded');
-        mbNavigation.classList.remove('mb-nav-hidden');
-        mbNavigation.style.display = 'flex';
-        mbNavigation.style.opacity = '1';
-        mbNavigation.style.transform = 'translateY(0)';
+        // Сначала добавляем класс initial-hidden для подготовки анимации появления
+        mbNavigation.classList.add('mb-initial-hidden');
+        
+        // Используем requestAnimationFrame для плавной анимации появления
+        requestAnimationFrame(() => {
+            // Небольшая задержка для более плавной анимации
+            setTimeout(() => {
+                // Удаляем класс скрытия
+                mbNavigation.classList.remove('mb-initial-hidden');
+                // Добавляем класс для анимации появления
+                mbNavigation.classList.add('mb-nav-loaded');
+                
+                // Также удаляем mb-nav-hidden если присутствует
+                if (mbNavigation.classList.contains('mb-nav-hidden')) {
+                    mbNavigation.classList.remove('mb-nav-hidden');
+                }
+            }, 50);
+        });
+        
+        // Проверяем текущее положение страницы сразу после загрузки
+        setTimeout(() => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Если страница уже была проскроллена более чем на 150px,
+            // и мы не на странице редактора, скрываем навигацию
+            if (scrollTop > 150 && 
+                !window.location.href.includes('editor') && 
+                !window.location.href.includes('create-new')) {
+                    
+                // Проверяем наличие объекта MobileNavWheelPicker
+                if (window.MobileNavWheelPicker && window.MobileNavWheelPicker.scroll) {
+                    // Устанавливаем lastPageScroll для корректного расчета направления
+                    window.MobileNavWheelPicker.scroll.lastPageScroll = scrollTop - 10;
+                    window.MobileNavWheelPicker.scroll.hideNavigation();
+                } else {
+                    // Запасной вариант прямого скрытия
+                    mbNavigation.classList.add('mb-nav-hidden');
+                }
+            }
+        }, 500);
+    }
+    
+    // Активируем скролл-слушатели сразу после загрузки страницы
+    setTimeout(() => {
+        if (typeof window.MobileNavWheelPicker !== 'undefined' && 
+            window.MobileNavWheelPicker.scroll) {
+            // Настраиваем обработчики скролла
+            window.MobileNavWheelPicker.scroll.setupPageScrollListener();
+            
+            // Устанавливаем начальное значение для корректного определения направления
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            window.MobileNavWheelPicker.scroll.lastPageScroll = currentScroll;
+        }
+    }, 200);
+    
+    // Предотвращаем скрытие мобильной навигации ТОЛЬКО на страницах редакторов
+    if (window.location.href.includes('media/editor') || 
+        window.location.href.includes('templates/editor') || 
+        window.location.href.includes('client/templates/editor')) {
+        
+        // Повторяем применение с задержкой, чтобы перекрыть другие настройки
+        setTimeout(() => {
+            if (mbNavigation) {
+                mbNavigation.classList.add('mb-nav-force-visible');
+                mbNavigation.classList.remove('mb-nav-hidden');
+                mbNavigation.classList.remove('mb-initial-hidden');
+            }
+        }, 300);
     }
     
     // Единая функция для сохранения шаблона и формы
@@ -313,13 +375,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Предотвращаем скрытие мобильной навигации на страницах редакторов
+    // Предотвращаем скрытие мобильной навигации ТОЛЬКО на страницах редакторов
     if (window.location.href.includes('media/editor') || 
         window.location.href.includes('templates/editor') || 
         window.location.href.includes('client/templates/editor')) {
         const mbNavigation = document.querySelector('.mb-navigation');
         if (mbNavigation) {
-            mbNavigation.style.display = 'flex';
+            mbNavigation.classList.add('mb-nav-force-visible');
         }
     }
     
@@ -353,6 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<!-- Улучшенные стили для анимации навигационной панели -->
 <style>
     /*
     * Prefixed by https://autoprefixer.github.io
@@ -487,16 +550,44 @@ document.addEventListener('DOMContentLoaded', function() {
         border-radius: 2px;
     }
     
-    /* Дополнительные стили для гарантии отображения мобильной навигации */
-    .mb-navigation {
+    /* Обновленные стили для гарантии отображения мобильной навигации ТОЛЬКО на страницах редактора */
+    .mb-navigation.mb-nav-force-visible {
         display: flex !important;
         opacity: 1 !important;
         transform: translateY(0) !important;
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 999999999 !important;
+    }
+    
+    /* Удаляем стили, которые блокируют скрытие навигации на всех страницах */
+    /* Оставляем только базовые стили */
+    .mb-navigation {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #ffffff;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 99999999;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        will-change: transform, opacity;
+    }
+    
+    /* Стили для скрытия навигации */
+    .mb-navigation.mb-nav-hidden {
+        transform: translateY(120%) !important;
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    /* Стили для начального скрытия (для анимации появления) */
+    .mb-navigation.mb-initial-hidden {
+        transform: translateY(120%);
+        opacity: 0;
+    }
+    
+    /* Стили для плавного появления */
+    .mb-navigation.mb-nav-loaded {
+        transform: translateY(0);
+        opacity: 1;
     }
 </style>
 <?php /**PATH C:\OSPanel\domains\tyty\resources\views/layouts/partials/mobile-nav.blade.php ENDPATH**/ ?>

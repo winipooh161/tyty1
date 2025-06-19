@@ -71,10 +71,7 @@
             <?php if($templates->count() > 0): ?>
                 <?php echo $__env->make('user.templates.partials.template-list', ['templates' => $templates], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
             <?php else: ?>
-                <div class="alert alert-warning">
-                    <h4><i class="bi bi-exclamation-triangle me-2"></i> У вас пока нет шаблонов</h4>
-                    <p>Перейдите в <a href="<?php echo e(route('templates.categories')); ?>">категории шаблонов</a> чтобы создать свой первый шаблон.</p>
-                </div>
+              
             <?php endif; ?>
         </div>
         
